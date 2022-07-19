@@ -43,7 +43,7 @@ h1, h2, h3, h4, h5, h6 {
     font-family: Goldman, sans-serif;
     font-size: 7.5em;
     color: #ffffff;
-    background: linear-gradient(to right, #00f260, #0575e6);
+    background: linear-gradient(45deg, #ff3cda, #00e0ff, #0575e6);
     -webkit-background-clip: text;
     -webkit-text-fill-color: transparent;
 }
@@ -60,33 +60,22 @@ h1, h2, h3, h4, h5, h6 {
     font-size: 2.2em;
     letter-spacing: 10px;
     text-align: center;
-    background: linear-gradient(to right, #00f260, #0575e6);
+    background: linear-gradient(45deg, #ff3cda, #00e0ff, #0575e6);
     padding: 20px;
     border-radius: 10px;
 }
 
 #links {
     width: 100%;
-    height: 15%;
+    height: 20%;
     display: flex;
     justify-content: center;
     align-items: center;
-}
-
-#links a {
-    width: 33.333333%;
-    height: 100%;
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    background: #000000;
-}
-
-#links a img {
-    height: 50%;
 }
 
 .link {
+    width: 33.333333%;
+    height: 100%;
     display: flex;
     justify-content: center;
     align-items: center;
@@ -96,8 +85,24 @@ h1, h2, h3, h4, h5, h6 {
     letter-spacing: 5px;
     color: #ffffff;
     text-decoration: none;
+    background-size: 15%;
+    background-position: 50%;
+    background-repeat:no-repeat;
+    transition: background-size 150ms ease-in-out 0s;
 }
 
-#links a:hover {
-    background: linear-gradient(180deg, #000000, #43a35a);
+#linkIG {
+    background-image: url('/img/ig.png');
+}
+
+#linkTG {
+    background-image: url('/img/tg.png');
+}
+
+#linkVK {
+    background-image: url('/img/vk.png');
+}
+
+#linkIG:hover, #linkTG:hover, #linkVK:hover {
+    background-size: 20%;
 }
