@@ -1,0 +1,3 @@
+.idea
+nginx/ssl/*
+!nginx/ssl/.gitkeep

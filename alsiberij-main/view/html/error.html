@@ -1,0 +1,18 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>{{ .ErrorMessage}}</title>
+    <link href="https://fonts.googleapis.com/css2?family=Goldman:wght@700&family=Montserrat:wght@400;600;900&family=Raleway:wght@600&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="/css/error.css">
+</head>
+<body>
+<div id="head">
+    <h1><a href="/">ALSIBERIJ</a></h1>
+</div>
+<div id="content">
+    <h2>{{ .ErrorCode}}</h2>
+    <h3>{{ .ErrorMessage}}</h3>
+</div>
+</body>
+</html>
