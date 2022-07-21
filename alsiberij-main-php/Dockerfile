@@ -1,0 +1,8 @@
+FROM php:8.1-fpm
+
+WORKDIR /prj
+
+COPY  . .
+
+ENV PORT 9000
+EXPOSE $PORT

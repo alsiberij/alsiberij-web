@@ -2,6 +2,7 @@ package main
 
 import (
 	"app/server"
+	"crypto/tls"
 	"github.com/fasthttp/router"
 	"github.com/valyala/fasthttp"
 	"log"
@@ -18,8 +19,20 @@ func init() {
 func main() {
 	port := os.Getenv("PORT")
 	if port == "" {
-		port = "1409"
+		port = "11400"
 	}
+
+	cert, err := tls.LoadX509KeyPair("./ssl/fullchain.pem", "./ssl/privkey.pem")
+	if err != nil {
+		log.Fatalf("NO SSL CERTIFICATES: %s", err.Error())
+	}
+
+	config := &tls.Config{Certificates: []tls.Certificate{cert}}
+	ln, err := tls.Listen("tcp", ":"+port, config)
+	if err != nil {
+		log.Fatalf("FAILED TO LISTEN :%s - %s", port, err.Error())
+	}
+	defer ln.Close()
 
 	r := router.New()
 
@@ -38,5 +51,5 @@ func main() {
 		Name:    "alsiberij-main",
 	}
 
-	log.Fatal(s.ListenAndServe(":" + port))
+	log.Fatal(s.Serve(ln))
 }

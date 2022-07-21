@@ -10,9 +10,18 @@ services:
       - "443:443"
     depends_on:
       - alsiberij-main
+      - alsiberij-main-php
 
   alsiberij-main:
     build:
       context: alsiberij-main
       dockerfile: Dockerfile
     container_name: als-main
+    ports:
+      - "11400:11400"
+
+  alsiberij-main-php:
+    build:
+      context: alsiberij-main-php
+      dockerfile: Dockerfile
+    container_name: als-main-php
