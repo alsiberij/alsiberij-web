@@ -15,6 +15,9 @@ COPY --from=builder /app/app /bin/app
 COPY view /bin/view
 ENV PATH_VIEW "/bin/view"
 
+COPY ssl /bin/ssl
+ENV SSL_PATH "/bin/ssl"
+
 ENV PORT 11400
 EXPOSE $PORT
 

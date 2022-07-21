@@ -22,7 +22,12 @@ func main() {
 		port = "11400"
 	}
 
-	cert, err := tls.LoadX509KeyPair("./ssl/fullchain.pem", "./ssl/privkey.pem")
+	sslPath := os.Getenv("SSL_PATH")
+	if sslPath == "" {
+		sslPath = "./ssl"
+	}
+
+	cert, err := tls.LoadX509KeyPair(sslPath+"/fullchain.pem", sslPath+"/privkey.pem")
 	if err != nil {
 		log.Fatalf("NO SSL CERTIFICATES: %s", err.Error())
 	}
