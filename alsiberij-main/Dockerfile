@@ -15,7 +15,7 @@ COPY --from=builder /app/app /bin/app
 COPY view /bin/view
 ENV PATH_VIEW "/bin/view"
 
-ENV PORT "11400"
+ENV PORT 11400
 EXPOSE $PORT
 
 ENTRYPOINT ["/bin/app"]
