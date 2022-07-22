@@ -11,6 +11,14 @@ services:
     depends_on:
       - alsiberij-main-php
 
+  postgres:
+    build:
+      context: postgres
+      dockerfile: Dockerfile
+    container_name: pgs
+    volumes:
+      - ./postgres/data:/var/lib/postgresql/data
+
   alsiberij-main-php:
     build:
       context: alsiberij-main-php
