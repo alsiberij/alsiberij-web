@@ -1,5 +1,1 @@
 .idea
-nginx/ssl/*
-!nginx/ssl/.gitkeep
-alsiberij-main/ssl/*
-!alsiberij-main/ssl/.gitkeep
