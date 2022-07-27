@@ -1,0 +1,11 @@
+CREATE TABLE refresh_tokens (
+    id SERIAL PRIMARY KEY,
+    "userId" INTEGER NOT NULL REFERENCES users(id),
+    token VARCHAR(1024) NOT NULL,
+    "isExpired" BOOLEAN DEFAULT FALSE NOT NULL,
+    "expiresAt" TIMESTAMP NOT NULL,
+    "issuedAt" TIMESTAMP DEFAULT CURRENT_TIMESTAMP NOT NULL,
+    "lastUsedAt" TIMESTAMP DEFAULT NULL
+);
+
+CREATE UNIQUE INDEX ON refresh_tokens(token);

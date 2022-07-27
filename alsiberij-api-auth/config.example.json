@@ -1,0 +1,11 @@
+{
+  "authPG": {
+    "user": "als_auth",
+    "password": "als_auth",
+    "host": "pgs",
+    "port": 5432,
+    "dbName": "als_db",
+    "sslMode": "disable",
+    "maxCons": 16
+  }
+}
