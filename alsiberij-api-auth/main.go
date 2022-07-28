@@ -67,6 +67,9 @@ func main() {
 	r.POST("/register", fasthttp.RequestHandler(
 		srv.WithMiddlewares(srv.Register, srv.AddJsonContentTypeHeader, srv.AddExecutionTimeHeader)))
 
+	r.GET("/validateJWT", fasthttp.RequestHandler(
+		srv.WithMiddlewares(srv.ValidateJWT, srv.Authorize, srv.AddJsonContentTypeHeader, srv.AddExecutionTimeHeader)))
+
 	s := fasthttp.Server{
 		Name:    "ALSIBERIJ-API-AUTH",
 		Handler: r.Handler,

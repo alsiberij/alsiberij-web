@@ -213,3 +213,19 @@ func Register(ctx *fasthttp.RequestCtx) {
 
 	ctx.SetStatusCode(fasthttp.StatusCreated)
 }
+
+func ValidateJWT(ctx *fasthttp.RequestCtx) {
+	claims, ok := ctx.UserValue(JwtContext).(jwt.Claims)
+	if !ok {
+		Set500(ctx, claims)
+		return
+	}
+
+	_ = json.NewEncoder(ctx).Encode(struct {
+		Status    bool       `json:"status"`
+		JwtClaims jwt.Claims `json:"jwtClaims"`
+	}{
+		Status:    true,
+		JwtClaims: claims,
+	})
+}
