@@ -11,7 +11,7 @@ import (
 
 const (
 	RefreshTokenLength   = uint(1024)
-	RefreshTokenAlphabet = "oOIiLlJj01"
+	RefreshTokenAlphabet = "-="
 	RefreshTokenLifetime = 7 * 24 * time.Hour
 )
 
@@ -29,7 +29,13 @@ func Login(ctx *fasthttp.RequestCtx) {
 	var request LoginRequest
 	err := json.Unmarshal(ctx.Request.Body(), &request)
 	if err != nil {
-		Set400(ctx, InvalidRequestBodyMessage, InvalidRequestBodyCode)
+		Set400(ctx, InvalidRequestBodyUserMessage)
+		return
+	}
+
+	isValid, _ := request.Validate()
+	if !isValid {
+		Set401(ctx)
 		return
 	}
 
@@ -74,7 +80,13 @@ func Refresh(ctx *fasthttp.RequestCtx) {
 	var request RefreshRequest
 	err := json.Unmarshal(ctx.Request.Body(), &request)
 	if err != nil {
-		Set400(ctx, InvalidRequestBodyMessage, InvalidRequestBodyCode)
+		Set400(ctx, InvalidRequestBodyUserMessage)
+		return
+	}
+
+	isValid, _ := request.Validate()
+	if !isValid {
+		Set401(ctx)
 		return
 	}
 
@@ -127,13 +139,19 @@ func CheckEmail(ctx *fasthttp.RequestCtx) {
 	var request CheckEmailRequest
 	err := json.Unmarshal(ctx.Request.Body(), &request)
 	if err != nil {
-		Set400(ctx, InvalidRequestBodyMessage, InvalidRequestBodyCode)
+		Set400(ctx, InvalidRequestBodyUserMessage)
 		return
 	}
 
-	//TODO SEND EMAIL
+	isValid, userMsg := request.Validate()
+	if !isValid {
+		Set400(ctx, userMsg)
+		return
+	}
+
 	//TODO GENERATE CODE
 	code := 111111
+	//TODO SEND EMAIL
 
 	repository.EmailCache.Save(request.Email, code)
 }
@@ -142,13 +160,19 @@ func Register(ctx *fasthttp.RequestCtx) {
 	var request RegisterRequest
 	err := json.Unmarshal(ctx.Request.Body(), &request)
 	if err != nil {
-		Set400(ctx, InvalidRequestBodyMessage, InvalidRequestBodyCode)
+		Set400(ctx, InvalidRequestBodyUserMessage)
+		return
+	}
+
+	isValid, userMsg := request.Validate()
+	if !isValid {
+		Set400(ctx, userMsg)
 		return
 	}
 
 	code, ok := repository.EmailCache.Search(request.Email)
 	if !(ok && code == request.Code) {
-		Set400(ctx, InvalidEmailCodeMessage, InvalidEmailCodeCode)
+		Set400(ctx, InvalidCodeUserMessage)
 		return
 	}
 
@@ -167,7 +191,7 @@ func Register(ctx *fasthttp.RequestCtx) {
 		return
 	}
 	if exists {
-		Set400(ctx, LoginExistsMessage, LoginExistsCode)
+		Set400(ctx, LoginExistsUserMessage)
 		return
 	}
 
@@ -177,7 +201,7 @@ func Register(ctx *fasthttp.RequestCtx) {
 		return
 	}
 	if exists {
-		Set400(ctx, EmailExistsMessage, EmailExistsCode)
+		Set400(ctx, EmailExistsUserMessage)
 		return
 	}
 

@@ -5,65 +5,95 @@ import (
 	"github.com/valyala/fasthttp"
 )
 
-const (
-	InvalidRequestBodyCode    = -1
-	InvalidRequestBodyMessage = "Неверное тело запроса"
-
-	InvalidEmailCodeCode    = -2
-	InvalidEmailCodeMessage = "Неверный код из письма"
-
-	LoginExistsCode    = -3
-	LoginExistsMessage = "Пользователь с таким логином уже существует"
-
-	EmailExistsCode    = -4
-	EmailExistsMessage = "Пользователь с такой почтой уже существует"
-)
-
 type (
 	HttpError struct {
+		HttpCode int         `json:"statusCode"`
+		DevMsg   string      `json:"devMsg"`
+		UsrMsg   UserMessage `json:"usrMsg"`
+	}
+
+	UserMessage struct {
+		Message      string `json:"message"`
 		InternalCode int    `json:"internalCode"`
-		HttpCode     int    `json:"statusCode"`
-		DevMsg       string `json:"devMsg"`
-		UsrMsg       string `json:"usrMsg"`
 	}
 )
 
-func Set400(ctx *fasthttp.RequestCtx, userMsg string, internalCode int) {
+var (
+	InvalidRequestBodyUserMessage = UserMessage{
+		Message:      "Неверное тело запроса",
+		InternalCode: -1,
+	}
+	InvalidLoginUserMessage = UserMessage{
+		Message:      "Неверный логин",
+		InternalCode: -2,
+	}
+	InvalidPasswordUserMessage = UserMessage{
+		Message:      "Неверный пароль",
+		InternalCode: -3,
+	}
+	InvalidEmailUserMessage = UserMessage{
+		Message:      "Неправильный email",
+		InternalCode: -4,
+	}
+	InvalidRefreshTokenUserMessage = UserMessage{
+		Message:      "Неверный токен обновления",
+		InternalCode: -5,
+	}
+	InvalidCodeUserMessage = UserMessage{
+		Message:      "Неверный код из письма",
+		InternalCode: -6,
+	}
+	LoginExistsUserMessage = UserMessage{
+		Message:      "Пользователь с таким логином уже существует",
+		InternalCode: -7,
+	}
+	EmailExistsUserMessage = UserMessage{
+		Message:      "Пользователь с такой почтой уже существует",
+		InternalCode: -8,
+	}
+)
+
+func Set400(ctx *fasthttp.RequestCtx, userMessage UserMessage) {
 	_ = json.NewEncoder(ctx).Encode(HttpError{
-		InternalCode: internalCode,
-		HttpCode:     fasthttp.StatusBadRequest,
-		DevMsg:       "",
-		UsrMsg:       userMsg,
+		HttpCode: fasthttp.StatusBadRequest,
+		DevMsg:   "",
+		UsrMsg:   userMessage,
 	})
 	ctx.SetContentType("application/json")
 }
 
 func Set401(ctx *fasthttp.RequestCtx) {
 	_ = json.NewEncoder(ctx).Encode(HttpError{
-		InternalCode: 0,
-		HttpCode:     fasthttp.StatusUnauthorized,
-		DevMsg:       "Unauthorized",
-		UsrMsg:       "Не авторизован",
+		HttpCode: fasthttp.StatusUnauthorized,
+		DevMsg:   "Unauthorized",
+		UsrMsg: UserMessage{
+			Message:      "Не авторизован",
+			InternalCode: 1,
+		},
 	})
 	ctx.SetContentType("application/json")
 }
 
 func Set404(ctx *fasthttp.RequestCtx) {
 	_ = json.NewEncoder(ctx).Encode(HttpError{
-		InternalCode: 0,
-		HttpCode:     fasthttp.StatusNotFound,
-		DevMsg:       "Not found",
-		UsrMsg:       "Не найдено",
+		HttpCode: fasthttp.StatusNotFound,
+		DevMsg:   "Not found",
+		UsrMsg: UserMessage{
+			Message:      "Не найдено",
+			InternalCode: 1,
+		},
 	})
 	ctx.SetContentType("application/json")
 }
 
 func Set405(ctx *fasthttp.RequestCtx) {
 	_ = json.NewEncoder(ctx).Encode(HttpError{
-		InternalCode: 0,
-		HttpCode:     fasthttp.StatusNotFound,
-		DevMsg:       "Method not allowed",
-		UsrMsg:       "Метод не поддерживается",
+		HttpCode: fasthttp.StatusMethodNotAllowed,
+		DevMsg:   "Method not allowed",
+		UsrMsg: UserMessage{
+			Message:      "Метод не поддерживается",
+			InternalCode: 1,
+		},
 	})
 	ctx.SetContentType("application/json")
 }
@@ -77,7 +107,10 @@ func Set500(ctx *fasthttp.RequestCtx, i interface{}) {
 	_ = json.NewEncoder(ctx).Encode(HttpError{
 		HttpCode: fasthttp.StatusInternalServerError,
 		DevMsg:   devMsg,
-		UsrMsg:   "",
+		UsrMsg: UserMessage{
+			Message:      "Внутренняя ошибка сервера",
+			InternalCode: 2,
+		},
 	})
 	ctx.SetContentType("application/json")
 }
