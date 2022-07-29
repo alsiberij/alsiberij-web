@@ -231,3 +231,26 @@ func ValidateJWT(ctx *fasthttp.RequestCtx) {
 	})
 	ctx.SetContentType("application/json")
 }
+
+func Users(ctx *fasthttp.RequestCtx) {
+	conn, err := repository.AuthPostgresRepository.AcquireConnection()
+	if err != nil {
+		Set500(ctx, err)
+		return
+	}
+	defer conn.Release()
+
+	userRep := repository.AuthPostgresRepository.UserRepository(conn)
+
+	list, err := userRep.AllShort()
+	if err != nil {
+		Set500(ctx, err)
+		return
+	}
+
+	_ = json.NewEncoder(ctx).Encode(UsersResponse{
+		Count: len(list),
+		List:  list,
+	})
+	ctx.SetContentType("application/json")
+}

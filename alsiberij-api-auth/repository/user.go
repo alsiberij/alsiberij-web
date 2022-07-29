@@ -12,7 +12,8 @@ type (
 	UserRepository interface {
 		Create(email, login, password string) error
 		Get(id int64) (models.User, bool, error)
-		GetAll() ([]models.User, error)
+		All() ([]models.User, error)
+		AllShort() ([]models.UserShort, error)
 		GetByCredentials(login, password string) (models.User, bool, error)
 		Delete(id int64) error
 		EmailExists(email string) (bool, error)
@@ -55,7 +56,7 @@ func (r *UserPostgresRepository) Get(id int64) (models.User, bool, error) {
 	return user, exists, err
 }
 
-func (r *UserPostgresRepository) GetAll() ([]models.User, error) {
+func (r *UserPostgresRepository) All() ([]models.User, error) {
 	row, err := r.conn.Query(context.Background(), `SELECT id, email, login, password, role, "createdAt" FROM users`)
 	if err != nil {
 		return nil, err
@@ -65,6 +66,25 @@ func (r *UserPostgresRepository) GetAll() ([]models.User, error) {
 	for row.Next() {
 		var user models.User
 		err = row.Scan(&user.Id, &user.Email, &user.Login, &user.Password, &user.Role, &user.CreatedAt)
+		if err != nil {
+			return nil, err
+		}
+		users = append(users, user)
+	}
+
+	return users, nil
+}
+
+func (r *UserPostgresRepository) AllShort() ([]models.UserShort, error) {
+	row, err := r.conn.Query(context.Background(), `SELECT id, email, login, role, "createdAt" FROM users`)
+	if err != nil {
+		return nil, err
+	}
+
+	var users []models.UserShort
+	for row.Next() {
+		var user models.UserShort
+		err = row.Scan(&user.Id, &user.Email, &user.Login, &user.Role, &user.CreatedAt)
 		if err != nil {
 			return nil, err
 		}

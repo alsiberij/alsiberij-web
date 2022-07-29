@@ -1,6 +1,7 @@
 package srv
 
 import (
+	"auth/models"
 	"fmt"
 	"regexp"
 	"strings"
@@ -37,6 +38,11 @@ type (
 		Code     int    `json:"code"`
 		Login    string `json:"login"`
 		Password string `json:"password"`
+	}
+
+	UsersResponse struct {
+		Count int `json:"count"`
+		List  []models.UserShort
 	}
 )
 

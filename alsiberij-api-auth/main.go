@@ -1,6 +1,7 @@
 package main
 
 import (
+	"auth/jwt"
 	"auth/repository"
 	"auth/srv"
 	"crypto/tls"
@@ -69,6 +70,9 @@ func main() {
 
 	r.GET("/validateJWT", fasthttp.RequestHandler(
 		srv.WithMiddlewares(srv.ValidateJWT, srv.Authorize, srv.AddExecutionTimeHeader)))
+
+	r.GET("/users", fasthttp.RequestHandler(
+		srv.WithMiddlewares(srv.Users, srv.AuthorizeRoles([]string{jwt.RoleCreator}), srv.AddExecutionTimeHeader)))
 
 	s := fasthttp.Server{
 		Name:    "ALSIBERIJ-API-AUTH",
