@@ -27,11 +27,7 @@ type (
 func (r *RefreshTokenPostgresRepository) Create(userId int64, token string, expiresAt time.Time) error {
 	_, err := r.conn.Exec(context.Background(), `INSERT INTO refresh_tokens("userId", token, "expiresAt") VALUES ($1, $2, $3)`,
 		userId, token, expiresAt)
-	if err != nil {
-		return err
-	}
-
-	return nil
+	return err
 }
 
 func (r *RefreshTokenPostgresRepository) ById(id int64) (models.RefreshToken, bool, error) {
@@ -51,6 +47,9 @@ func (r *RefreshTokenPostgresRepository) ById(id int64) (models.RefreshToken, bo
 		err = rows.Scan(&refreshToken.Id, &refreshToken.Token, &refreshToken.IsExpired, &refreshToken.ExpiresAt,
 			&refreshToken.IssuedAt, &refreshToken.LastUsedAt, &refreshToken.User.Id, &refreshToken.User.Email,
 			&refreshToken.User.Login, &refreshToken.User.Password, &refreshToken.User.Role, &refreshToken.User.CreatedAt)
+		if err != nil {
+			return models.RefreshToken{}, true, err
+		}
 	}
 	return refreshToken, exists, err
 }
@@ -96,6 +95,9 @@ func (r *RefreshTokenPostgresRepository) ByToken(token string) (models.RefreshTo
 		err = rows.Scan(&refreshToken.Id, &refreshToken.Token, &refreshToken.IsExpired, &refreshToken.ExpiresAt,
 			&refreshToken.IssuedAt, &refreshToken.LastUsedAt, &refreshToken.User.Id, &refreshToken.User.Email,
 			&refreshToken.User.Login, &refreshToken.User.Password, &refreshToken.User.Role, &refreshToken.User.CreatedAt)
+		if err != nil {
+			return models.RefreshToken{}, true, err
+		}
 	}
 	return refreshToken, exists, err
 }
