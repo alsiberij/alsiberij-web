@@ -11,6 +11,7 @@ type (
 		Email     string   `json:"email"`
 		Login     string   `json:"login"`
 		Role      string   `json:"role"`
+		IsBanned  bool     `json:"isBanned"`
 		CreatedAt NullTime `json:"createdAt"`
 	}
 )

@@ -59,6 +59,11 @@ func Login(ctx *fasthttp.RequestCtx) {
 		return
 	}
 
+	if user.IsBanned {
+		Set400(ctx, AccountIsBannedUserMessage)
+		return
+	}
+
 	refTokenRep := repository.AuthPostgresRepository.RefreshTokenRepository(conn)
 
 	refreshToken := utils.GenerateString(RefreshTokenLength, RefreshTokenAlphabet)

@@ -51,6 +51,10 @@ var (
 		Message:      "Пользователь с такой почтой уже существует",
 		InternalCode: -8,
 	}
+	AccountIsBannedUserMessage = UserMessage{
+		Message:      "Ваш аккаунт заблокирован",
+		InternalCode: -9,
+	}
 )
 
 func Set400(ctx *fasthttp.RequestCtx, userMessage UserMessage) {
