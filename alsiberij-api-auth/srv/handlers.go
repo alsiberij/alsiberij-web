@@ -10,9 +10,9 @@ import (
 )
 
 const (
-	RefreshTokenLength   = uint(1024)
-	RefreshTokenAlphabet = "-="
-	RefreshTokenLifetime = 7 * 24 * time.Hour
+	RefreshTokenLength     = uint(1024)
+	RefreshTokenAlphabet   = "-="
+	RefreshTokenLifePeriod = 7 * 24 * time.Hour
 )
 
 type (
@@ -61,8 +61,7 @@ func Login(ctx *fasthttp.RequestCtx) {
 	refTokenRep := repository.AuthPostgresRepository.RefreshTokenRepository(conn)
 
 	refreshToken := utils.GenerateString(RefreshTokenLength, RefreshTokenAlphabet)
-	expiration := time.Now().Add(RefreshTokenLifetime)
-	err = refTokenRep.Create(user.Id, refreshToken, expiration)
+	err = refTokenRep.Create(user.Id, refreshToken)
 	if err != nil {
 		Set500(ctx, err)
 		return
@@ -70,7 +69,6 @@ func Login(ctx *fasthttp.RequestCtx) {
 
 	response := LoginResponse{
 		RefreshToken: refreshToken,
-		ExpiresIn:    expiration.Unix(),
 	}
 
 	_ = json.NewEncoder(ctx).Encode(response)
@@ -109,7 +107,7 @@ func Refresh(ctx *fasthttp.RequestCtx) {
 		return
 	}
 
-	if refreshToken.ExpiresAt.Before(time.Now()) {
+	if time.Now().Sub(refreshToken.LastUsedAt) > RefreshTokenLifePeriod {
 		err = refTokenRep.SetExpired(refreshToken.Id)
 		if err != nil {
 			Set500(ctx, err)
