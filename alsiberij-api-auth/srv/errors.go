@@ -74,6 +74,18 @@ func Set401(ctx *fasthttp.RequestCtx) {
 	ctx.SetContentType("application/json")
 }
 
+func Set403(ctx *fasthttp.RequestCtx) {
+	_ = json.NewEncoder(ctx).Encode(HttpError{
+		HttpCode: fasthttp.StatusForbidden,
+		DevMsg:   "Forbidden",
+		UsrMsg: UserMessage{
+			Message:      "Доступ запрещен",
+			InternalCode: 1,
+		},
+	})
+	ctx.SetContentType("application/json")
+}
+
 func Set404(ctx *fasthttp.RequestCtx) {
 	_ = json.NewEncoder(ctx).Encode(HttpError{
 		HttpCode: fasthttp.StatusNotFound,

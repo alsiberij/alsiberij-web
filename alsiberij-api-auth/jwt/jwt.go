@@ -13,6 +13,12 @@ import (
 
 const (
 	JwtLifetime = 3600
+
+	RoleCreator        = "CREATOR"
+	RoleAdmin          = "ADMIN"
+	RoleModerator      = "MODERATOR"
+	RolePrivilegedUser = "PRIVILEGED_USER"
+	RoleUser           = "USER"
 )
 
 type (

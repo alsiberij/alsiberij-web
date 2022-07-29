@@ -2,6 +2,7 @@ package srv
 
 import (
 	"auth/jwt"
+	"auth/utils"
 	"fmt"
 	"github.com/valyala/fasthttp"
 	"time"
@@ -48,5 +49,31 @@ func Authorize(h Handler) Handler {
 
 		ctx.SetUserValue(JwtContext, claims)
 		h(ctx)
+	}
+}
+
+func AuthorizeRoles(roles []string) Middleware {
+	return func(h Handler) Handler {
+		return func(ctx *fasthttp.RequestCtx) {
+			authorization := string(ctx.Request.Header.Peek("Authorization"))
+			if len(authorization) < 7 {
+				Set401(ctx)
+				return
+			}
+
+			bearerToken := authorization[7:]
+			_, claims, err := jwt.Parse(bearerToken)
+			if err != nil {
+				Set401(ctx)
+				return
+			}
+
+			if !utils.ExistsIn(roles, claims.Rol) {
+				Set403(ctx)
+				return
+			}
+
+			h(ctx)
+		}
 	}
 }
