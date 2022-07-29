@@ -18,6 +18,7 @@ type (
 		Delete(id int64) error
 		EmailExists(email string) (bool, error)
 		LoginExists(login string) (bool, error)
+		ChangeStatus(id int64, isBanned bool) error
 	}
 
 	UserPostgresRepository struct {
@@ -140,4 +141,9 @@ func (r *UserPostgresRepository) LoginExists(login string) (bool, error) {
 	}
 
 	return exists, nil
+}
+
+func (r *UserPostgresRepository) ChangeStatus(id int64, isBanned bool) error {
+	_, err := r.conn.Exec(context.Background(), `UPDATE users SET "isBanned" = $1 WHERE id = $2`, isBanned, id)
+	return err
 }

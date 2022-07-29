@@ -6,6 +6,7 @@ import (
 	"auth/utils"
 	"encoding/json"
 	"github.com/valyala/fasthttp"
+	"strconv"
 	"time"
 )
 
@@ -258,4 +259,34 @@ func Users(ctx *fasthttp.RequestCtx) {
 		List:  list,
 	})
 	ctx.SetContentType("application/json")
+}
+
+func ChangeUserStatus(ctx *fasthttp.RequestCtx) {
+	userIdFromRequest := ctx.UserValue("id").(string)
+	userId, _ := strconv.ParseInt(userIdFromRequest, 10, 64)
+
+	//TODO VALIDATE IF USER CAN BE BANNED CREATOR -> ADMIN -> MODERATOR -> PRIVILEGED_USER, USER
+
+	conn, err := repository.AuthPostgresRepository.AcquireConnection()
+	if err != nil {
+		Set500(ctx, err)
+		return
+	}
+	defer conn.Release()
+
+	var request ChangeUserStatusRequest
+	err = json.Unmarshal(ctx.Request.Body(), &request)
+	if err != nil {
+		Set400(ctx, InvalidRequestBodyUserMessage)
+		return
+	}
+
+	userRep := repository.AuthPostgresRepository.UserRepository(conn)
+	err = userRep.ChangeStatus(userId, request.IsBanned)
+	if err != nil {
+		Set400(ctx, InvalidRequestBodyUserMessage)
+		return
+	}
+
+	//TODO REVOKE ALL REFRESH TOKENS
 }

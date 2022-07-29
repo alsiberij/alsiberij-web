@@ -44,6 +44,10 @@ type (
 		Count int `json:"count"`
 		List  []models.UserShort
 	}
+
+	ChangeUserStatusRequest struct {
+		IsBanned bool `json:"isBanned"`
+	}
 )
 
 var (
