@@ -53,22 +53,22 @@ func main() {
 	r.PanicHandler = srv.Set500
 
 	r.GET("/", fasthttp.RequestHandler(
-		srv.WithMiddlewares(srv.Test, srv.AddJsonContentTypeHeader, srv.AddExecutionTimeHeader)))
+		srv.WithMiddlewares(srv.Test, srv.AddExecutionTimeHeader)))
 
 	r.POST("/login", fasthttp.RequestHandler(
-		srv.WithMiddlewares(srv.Login, srv.AddJsonContentTypeHeader, srv.AddExecutionTimeHeader)))
+		srv.WithMiddlewares(srv.Login, srv.AddExecutionTimeHeader)))
 
 	r.POST("/refresh", fasthttp.RequestHandler(
-		srv.WithMiddlewares(srv.Refresh, srv.AddJsonContentTypeHeader, srv.AddExecutionTimeHeader)))
+		srv.WithMiddlewares(srv.Refresh, srv.AddExecutionTimeHeader)))
 
 	r.POST("/checkEmail", fasthttp.RequestHandler(
-		srv.WithMiddlewares(srv.CheckEmail, srv.AddJsonContentTypeHeader, srv.AddExecutionTimeHeader)))
+		srv.WithMiddlewares(srv.CheckEmail, srv.AddExecutionTimeHeader)))
 
 	r.POST("/register", fasthttp.RequestHandler(
-		srv.WithMiddlewares(srv.Register, srv.AddJsonContentTypeHeader, srv.AddExecutionTimeHeader)))
+		srv.WithMiddlewares(srv.Register, srv.AddExecutionTimeHeader)))
 
 	r.GET("/validateJWT", fasthttp.RequestHandler(
-		srv.WithMiddlewares(srv.ValidateJWT, srv.Authorize, srv.AddJsonContentTypeHeader, srv.AddExecutionTimeHeader)))
+		srv.WithMiddlewares(srv.ValidateJWT, srv.Authorize, srv.AddExecutionTimeHeader)))
 
 	s := fasthttp.Server{
 		Name:    "ALSIBERIJ-API-AUTH",

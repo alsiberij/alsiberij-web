@@ -23,13 +23,6 @@ func WithMiddlewares(h Handler, mds ...Middleware) Handler {
 	return handler
 }
 
-func AddJsonContentTypeHeader(h Handler) Handler {
-	return func(ctx *fasthttp.RequestCtx) {
-		ctx.SetContentType("application/json")
-		h(ctx)
-	}
-}
-
 func AddExecutionTimeHeader(h Handler) Handler {
 	return func(ctx *fasthttp.RequestCtx) {
 		start := time.Now()

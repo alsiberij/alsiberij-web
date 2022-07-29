@@ -23,6 +23,7 @@ func Test(ctx *fasthttp.RequestCtx) {
 	_ = json.NewEncoder(ctx).Encode(struct {
 		Status bool `json:"status"`
 	}{Status: true})
+	ctx.SetContentType("application/json")
 }
 
 func Login(ctx *fasthttp.RequestCtx) {
@@ -72,6 +73,7 @@ func Login(ctx *fasthttp.RequestCtx) {
 	}
 
 	_ = json.NewEncoder(ctx).Encode(response)
+	ctx.SetContentType("application/json")
 }
 
 func Refresh(ctx *fasthttp.RequestCtx) {
@@ -131,6 +133,7 @@ func Refresh(ctx *fasthttp.RequestCtx) {
 	}
 
 	_ = json.NewEncoder(ctx).Encode(response)
+	ctx.SetContentType("application/json")
 }
 
 func CheckEmail(ctx *fasthttp.RequestCtx) {
@@ -226,4 +229,5 @@ func ValidateJWT(ctx *fasthttp.RequestCtx) {
 		Status:    true,
 		JwtClaims: claims,
 	})
+	ctx.SetContentType("application/json")
 }
