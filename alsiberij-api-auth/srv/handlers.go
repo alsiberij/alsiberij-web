@@ -97,7 +97,7 @@ func Refresh(ctx *fasthttp.RequestCtx) {
 
 	refTokenRep := repository.AuthPostgresRepository.RefreshTokenRepository(conn)
 
-	refreshToken, exists, err := refTokenRep.ByToken(request.RefreshToken)
+	refreshToken, exists, err := refTokenRep.ByTokenNotExpired(request.RefreshToken)
 	if err != nil {
 		Set500(ctx, err)
 		return
