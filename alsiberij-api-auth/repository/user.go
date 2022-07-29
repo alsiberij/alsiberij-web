@@ -57,7 +57,7 @@ func (r *UserPostgresRepository) Get(id int64) (models.User, bool, error) {
 }
 
 func (r *UserPostgresRepository) All() ([]models.User, error) {
-	row, err := r.conn.Query(context.Background(), `SELECT id, email, login, password, role, "createdAt" FROM users`)
+	row, err := r.conn.Query(context.Background(), `SELECT id, email, login, password, role, "createdAt" FROM users ORDER BY id DESC`)
 	if err != nil {
 		return nil, err
 	}
@@ -76,7 +76,7 @@ func (r *UserPostgresRepository) All() ([]models.User, error) {
 }
 
 func (r *UserPostgresRepository) AllShort() ([]models.UserShort, error) {
-	row, err := r.conn.Query(context.Background(), `SELECT id, email, login, role, "createdAt" FROM users`)
+	row, err := r.conn.Query(context.Background(), `SELECT id, email, login, role, "createdAt" FROM users ORDER BY id DESC`)
 	if err != nil {
 		return nil, err
 	}
