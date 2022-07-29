@@ -39,7 +39,7 @@ func (t *NullTime) MarshalJSON() ([]byte, error) {
 		return nil, nil
 	}
 
-	return []byte(t.time.Format("02.01.2006 15:04:05")), nil
+	return []byte(`"` + t.time.Format("02.01.2006 15:04:05") + `"`), nil
 }
 
 func (t *NullTime) UnmarshalJSON(bytes []byte) error {
