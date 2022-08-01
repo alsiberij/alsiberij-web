@@ -12,7 +12,7 @@ services:
       - "80:80"
       - "443:443"
     depends_on:
-      - alsiberij-main-php
+      - web-php-main
 
   postgres:
     build:
@@ -30,18 +30,18 @@ services:
 
   #SERVICES
 
-  alsiberij-api-auth:
+  api-go-auth:
     build:
-      context: alsiberij-api-auth
+      context: api-go-auth
       dockerfile: Dockerfile
-    container_name: als-api-auth
+    container_name: api-go-auth
     ports:
       - "11400:11400"
     depends_on:
       - postgres
 
-  alsiberij-main-php:
+  web-php-main:
     build:
-      context: alsiberij-main-php
+      context: web-php-main
       dockerfile: Dockerfile
-    container_name: als-main-php
+    container_name: web-php-main
