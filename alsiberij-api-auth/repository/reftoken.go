@@ -15,6 +15,7 @@ type (
 		ByTokenNotExpired(token string) (models.RefreshToken, bool, error)
 		All() ([]models.RefreshToken, error)
 		SetExpired(id int64) error
+		SetExpiredByUserId(userId int64) error
 		UpdateLastUsageTime(token string) error
 		Delete(id int64) error
 	}
@@ -162,5 +163,10 @@ func (r *RefreshTokenPostgresRepository) UpdateLastUsageTime(token string) error
 
 func (r *RefreshTokenPostgresRepository) Delete(id int64) error {
 	_, err := r.conn.Query(context.Background(), `DELETE FROM refresh_tokens WHERE id = $1`, id)
+	return err
+}
+
+func (r *RefreshTokenPostgresRepository) SetExpiredByUserId(userId int64) error {
+	_, err := r.conn.Exec(context.Background(), `UPDATE refresh_tokens SET "isExpired" = TRUE WHERE "userId" = $1`, userId)
 	return err
 }

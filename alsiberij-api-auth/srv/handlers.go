@@ -50,7 +50,7 @@ func Login(ctx *fasthttp.RequestCtx) {
 
 	userRep := repository.AuthPostgresRepository.UserRepository(conn)
 
-	user, exists, err := userRep.GetByCredentials(request.Login, request.Password)
+	user, exists, err := userRep.ByCredentials(request.Login, request.Password)
 	if err != nil {
 		Set500(ctx, err)
 		return
@@ -263,16 +263,11 @@ func Users(ctx *fasthttp.RequestCtx) {
 
 func ChangeUserStatus(ctx *fasthttp.RequestCtx) {
 	userIdFromRequest := ctx.UserValue("id").(string)
-	userId, _ := strconv.ParseInt(userIdFromRequest, 10, 64)
-
-	//TODO VALIDATE IF USER CAN BE BANNED CREATOR -> ADMIN -> MODERATOR -> PRIVILEGED_USER, USER
-
-	conn, err := repository.AuthPostgresRepository.AcquireConnection()
+	userId, err := strconv.ParseInt(userIdFromRequest, 10, 64)
 	if err != nil {
-		Set500(ctx, err)
+		Set400(ctx, InvalidUserIdUserMessage)
 		return
 	}
-	defer conn.Release()
 
 	var request ChangeUserStatusRequest
 	err = json.Unmarshal(ctx.Request.Body(), &request)
@@ -281,12 +276,58 @@ func ChangeUserStatus(ctx *fasthttp.RequestCtx) {
 		return
 	}
 
+	conn, err := repository.AuthPostgresRepository.AcquireConnection()
+	if err != nil {
+		Set500(ctx, err)
+		return
+	}
+	defer conn.Release()
+
 	userRep := repository.AuthPostgresRepository.UserRepository(conn)
-	err = userRep.ChangeStatus(userId, request.IsBanned)
+
+	user, exists, err := userRep.ById(userId)
+	if err != nil {
+		Set500(ctx, err)
+		return
+	}
+	if !exists {
+		Set400(ctx, InvalidUserIdUserMessage)
+	}
+
+	switch ctx.UserValue(JwtContext).(jwt.Claims).Rol {
+	case jwt.RoleModerator:
+		if !utils.ExistsIn(jwt.CanBeBannedByModerator, user.Role) {
+			Set403(ctx)
+			return
+		}
+	case jwt.RoleAdmin:
+		if !utils.ExistsIn(jwt.CanBeBannedByAdmin, user.Role) {
+			Set403(ctx)
+			return
+		}
+	case jwt.RoleCreator:
+		if !utils.ExistsIn(jwt.CanBeBannedByCreator, user.Role) {
+			Set403(ctx)
+			return
+		}
+	default:
+		Set403(ctx)
+		return
+	}
+
+	err = userRep.ChangeStatus(user.Id, request.IsBanned)
 	if err != nil {
 		Set400(ctx, InvalidRequestBodyUserMessage)
 		return
 	}
 
-	//TODO REVOKE ALL REFRESH TOKENS
+	if request.IsBanned {
+		refTokenRep := repository.AuthPostgresRepository.RefreshTokenRepository(conn)
+
+		err = refTokenRep.SetExpiredByUserId(user.Id)
+		if err != nil {
+			Set400(ctx, InvalidRequestBodyUserMessage)
+			return
+		}
+	}
 }

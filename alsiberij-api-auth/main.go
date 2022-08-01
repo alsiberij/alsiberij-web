@@ -74,7 +74,7 @@ func main() {
 	r.GET("/users", fasthttp.RequestHandler(
 		srv.WithMiddlewares(srv.Users, srv.AuthorizeRoles([]string{jwt.RoleCreator, jwt.RoleAdmin, jwt.RoleModerator}), srv.AddExecutionTimeHeader)))
 
-	r.PATCH("/user/{id:^[0-9]+$}/status", fasthttp.RequestHandler(
+	r.PATCH("/user/{id}/status", fasthttp.RequestHandler(
 		srv.WithMiddlewares(srv.ChangeUserStatus, srv.AuthorizeRoles([]string{jwt.RoleCreator, jwt.RoleAdmin, jwt.RoleModerator}), srv.AddExecutionTimeHeader)))
 
 	s := fasthttp.Server{

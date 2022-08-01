@@ -41,6 +41,10 @@ var (
 	errorInvalidJwtParts  = errors.New("JWT should contain 3 parts")
 	errorInvalidSignature = errors.New("JWT signature invalid")
 	errorExpired          = errors.New("JWT expired")
+
+	CanBeBannedByModerator = []string{RoleUser}
+	CanBeBannedByAdmin     = []string{RoleModerator, RolePrivilegedUser, RoleUser}
+	CanBeBannedByCreator   = []string{RoleAdmin, RoleModerator, RolePrivilegedUser, RoleUser}
 )
 
 func Create(userId int64, role string) (string, int64, int64) {

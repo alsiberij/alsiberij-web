@@ -73,6 +73,7 @@ func AuthorizeRoles(roles []string) Middleware {
 				return
 			}
 
+			ctx.SetUserValue(JwtContext, claims)
 			h(ctx)
 		}
 	}

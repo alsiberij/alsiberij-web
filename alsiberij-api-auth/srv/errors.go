@@ -55,6 +55,10 @@ var (
 		Message:      "Ваш аккаунт заблокирован",
 		InternalCode: -9,
 	}
+	InvalidUserIdUserMessage = UserMessage{
+		Message:      "Неверный идентификатор пользователя",
+		InternalCode: -10,
+	}
 )
 
 func Set400(ctx *fasthttp.RequestCtx, userMessage UserMessage) {

@@ -11,10 +11,10 @@ import (
 type (
 	UserRepository interface {
 		Create(email, login, password string) error
-		Get(id int64) (models.User, bool, error)
+		ById(id int64) (models.User, bool, error)
 		All() ([]models.User, error)
 		AllShort() ([]models.UserShort, error)
-		GetByCredentials(login, password string) (models.User, bool, error)
+		ByCredentials(login, password string) (models.User, bool, error)
 		Delete(id int64) error
 		EmailExists(email string) (bool, error)
 		LoginExists(login string) (bool, error)
@@ -40,7 +40,7 @@ func (r *UserPostgresRepository) Create(email, login, password string) error {
 	return nil
 }
 
-func (r *UserPostgresRepository) Get(id int64) (models.User, bool, error) {
+func (r *UserPostgresRepository) ById(id int64) (models.User, bool, error) {
 	row, err := r.conn.Query(context.Background(), `SELECT id, email, login, password, role, "createdAt", "isBanned" FROM users WHERE id = $1`,
 		id)
 	if err != nil {
@@ -95,7 +95,7 @@ func (r *UserPostgresRepository) AllShort() ([]models.UserShort, error) {
 	return users, nil
 }
 
-func (r *UserPostgresRepository) GetByCredentials(login, password string) (models.User, bool, error) {
+func (r *UserPostgresRepository) ByCredentials(login, password string) (models.User, bool, error) {
 	h := sha512.New()
 	h.Write([]byte(password))
 	password = hex.EncodeToString(h.Sum(nil))
