@@ -72,6 +72,7 @@ func Set400(ctx *fasthttp.RequestCtx, userMessage UserMessage) {
 		UsrMsg:   userMessage,
 	})
 	ctx.SetContentType("application/json")
+	ctx.SetStatusCode(fasthttp.StatusBadRequest)
 }
 
 func Set401(ctx *fasthttp.RequestCtx) {
@@ -84,6 +85,7 @@ func Set401(ctx *fasthttp.RequestCtx) {
 		},
 	})
 	ctx.SetContentType("application/json")
+	ctx.SetStatusCode(fasthttp.StatusUnauthorized)
 }
 
 func Set403(ctx *fasthttp.RequestCtx) {
@@ -96,6 +98,7 @@ func Set403(ctx *fasthttp.RequestCtx) {
 		},
 	})
 	ctx.SetContentType("application/json")
+	ctx.SetStatusCode(fasthttp.StatusForbidden)
 }
 
 func Set404(ctx *fasthttp.RequestCtx) {
@@ -108,6 +111,7 @@ func Set404(ctx *fasthttp.RequestCtx) {
 		},
 	})
 	ctx.SetContentType("application/json")
+	ctx.SetStatusCode(fasthttp.StatusNotFound)
 }
 
 func Set405(ctx *fasthttp.RequestCtx) {
@@ -120,6 +124,7 @@ func Set405(ctx *fasthttp.RequestCtx) {
 		},
 	})
 	ctx.SetContentType("application/json")
+	ctx.SetStatusCode(fasthttp.StatusMethodNotAllowed)
 }
 
 func Set500(ctx *fasthttp.RequestCtx, i interface{}) {
@@ -127,6 +132,8 @@ func Set500(ctx *fasthttp.RequestCtx, i interface{}) {
 	switch T := i.(type) {
 	case error:
 		devMsg = T.Error()
+	default:
+		devMsg = "Panic"
 	}
 	_ = json.NewEncoder(ctx).Encode(HttpError{
 		HttpCode: fasthttp.StatusInternalServerError,
@@ -137,4 +144,5 @@ func Set500(ctx *fasthttp.RequestCtx, i interface{}) {
 		},
 	})
 	ctx.SetContentType("application/json")
+	ctx.SetStatusCode(fasthttp.StatusInternalServerError)
 }
