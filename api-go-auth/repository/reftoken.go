@@ -16,6 +16,9 @@ type (
 		All() ([]models.RefreshToken, error)
 		SetExpired(id int64) error
 		SetExpiredByUserId(userId int64) error
+		SetExpiredByToken(token string) error
+		SetExpiredByTokenBelongingUser(token string) error
+		SetExpiredByTokenBelongingUserExceptCurrent(token string) error
 		UpdateLastUsageTime(token string) error
 		Delete(id int64) error
 	}
@@ -168,5 +171,20 @@ func (r *RefreshTokenPostgresRepository) Delete(id int64) error {
 
 func (r *RefreshTokenPostgresRepository) SetExpiredByUserId(userId int64) error {
 	_, err := r.conn.Exec(context.Background(), `UPDATE refresh_tokens SET "isExpired" = TRUE WHERE "userId" = $1`, userId)
+	return err
+}
+
+func (r *RefreshTokenPostgresRepository) SetExpiredByToken(token string) error {
+	_, err := r.conn.Exec(context.Background(), `UPDATE refresh_tokens SET "isExpired" = TRUE WHERE token = $1`, token)
+	return err
+}
+
+func (r *RefreshTokenPostgresRepository) SetExpiredByTokenBelongingUser(token string) error {
+	_, err := r.conn.Exec(context.Background(), `UPDATE refresh_tokens SET "isExpired" = TRUE WHERE "userId" = (SELECT "userId" FROM refresh_tokens WHERE token = $1)`, token)
+	return err
+}
+
+func (r *RefreshTokenPostgresRepository) SetExpiredByTokenBelongingUserExceptCurrent(token string) error {
+	_, err := r.conn.Exec(context.Background(), `UPDATE refresh_tokens SET "isExpired" = TRUE WHERE "userId" = (SELECT "userId" FROM refresh_tokens WHERE token = $1) AND token != $1`, token)
 	return err
 }

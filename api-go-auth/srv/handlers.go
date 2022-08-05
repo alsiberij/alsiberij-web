@@ -14,6 +14,10 @@ const (
 	RefreshTokenLength     = uint(1024)
 	RefreshTokenAlphabet   = "-="
 	RefreshTokenLifePeriod = 7 * 24 * time.Hour
+
+	RefreshTokenRevokeTypeCurrent          = "CURRENT"
+	RefreshTokenRevokeTypeAll              = "ALL"
+	RefreshTokenRevokeTypeAllExceptCurrent = "ALL_EXCEPT_CURRENT"
 )
 
 type (
@@ -140,6 +144,59 @@ func Refresh(ctx *fasthttp.RequestCtx) {
 
 	_ = json.NewEncoder(ctx).Encode(response)
 	ctx.SetContentType("application/json")
+}
+
+func Revoke(ctx *fasthttp.RequestCtx) {
+	var request RefreshRequest
+	err := json.Unmarshal(ctx.Request.Body(), &request)
+	if err != nil {
+		Set400(ctx, InvalidRequestBodyUserMessage)
+		return
+	}
+
+	isValid, userMessage := request.Validate()
+	if !isValid {
+		Set400(ctx, userMessage)
+		return
+	}
+
+	conn, err := repository.AuthPostgresRepository.AcquireConnection()
+	if err != nil {
+		Set500(ctx, err)
+		return
+	}
+	defer conn.Release()
+
+	refTokenRep := repository.AuthPostgresRepository.RefreshTokenRepository(conn)
+
+	_, exists, err := refTokenRep.ByToken(request.RefreshToken)
+	if err != nil {
+		Set500(ctx, err)
+		return
+	}
+	if !exists {
+		Set400(ctx, InvalidRefreshTokenUserMessage)
+		return
+	}
+
+	revokeType := string(ctx.QueryArgs().Peek("type"))
+
+	switch revokeType {
+	case RefreshTokenRevokeTypeCurrent:
+		err = refTokenRep.SetExpiredByToken(request.RefreshToken)
+	case RefreshTokenRevokeTypeAll:
+		err = refTokenRep.SetExpiredByTokenBelongingUser(request.RefreshToken)
+	case RefreshTokenRevokeTypeAllExceptCurrent:
+		err = refTokenRep.SetExpiredByTokenBelongingUserExceptCurrent(request.RefreshToken)
+	default:
+		Set400(ctx, InvalidRevokingRefreshTokenType)
+		return
+	}
+	if err != nil {
+		Set500(ctx, err)
+	}
+
+	ctx.SetStatusCode(fasthttp.StatusNoContent)
 }
 
 func CheckEmail(ctx *fasthttp.RequestCtx) {

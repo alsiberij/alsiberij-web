@@ -62,6 +62,9 @@ func main() {
 	r.POST("/refresh", fasthttp.RequestHandler(
 		srv.WithMiddlewares(srv.Refresh, srv.AddExecutionTimeHeader)))
 
+	r.DELETE("/refresh", fasthttp.RequestHandler(
+		srv.WithMiddlewares(srv.Revoke, srv.AddExecutionTimeHeader)))
+
 	r.POST("/checkEmail", fasthttp.RequestHandler(
 		srv.WithMiddlewares(srv.CheckEmail, srv.AddExecutionTimeHeader)))
 

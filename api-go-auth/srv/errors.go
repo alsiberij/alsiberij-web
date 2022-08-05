@@ -59,6 +59,10 @@ var (
 		Message:      "Неверный идентификатор пользователя",
 		InternalCode: -10,
 	}
+	InvalidRevokingRefreshTokenType = UserMessage{
+		Message:      "Неверный тип отзыва токена обновления",
+		InternalCode: -11,
+	}
 )
 
 func Set400(ctx *fasthttp.RequestCtx, userMessage UserMessage) {
