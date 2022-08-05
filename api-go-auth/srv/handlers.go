@@ -90,9 +90,9 @@ func Refresh(ctx *fasthttp.RequestCtx) {
 		return
 	}
 
-	isValid, _ := request.Validate()
+	isValid, userMessage := request.Validate()
 	if !isValid {
-		Set401(ctx)
+		Set400(ctx, userMessage)
 		return
 	}
 
