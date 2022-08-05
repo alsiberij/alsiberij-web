@@ -13,6 +13,7 @@ services:
       - "443:443"
     depends_on:
       - web-php-main
+      - api-go-auth
 
   postgres:
     build:
