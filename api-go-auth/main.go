@@ -33,6 +33,7 @@ func init() {
 
 func main() {
 	r := router.New()
+	r.RedirectTrailingSlash = false
 
 	r.NotFound = srv.Set404
 	r.MethodNotAllowed = srv.Set405

@@ -103,7 +103,7 @@ func Set404(ctx *fasthttp.RequestCtx) {
 		HttpCode: fasthttp.StatusNotFound,
 		DevMsg:   "Not found",
 		UsrMsg: UserMessage{
-			Message:      "Не найдено",
+			Message:      "Не найдено : " + string(ctx.Path()),
 			InternalCode: 1,
 		},
 	})
