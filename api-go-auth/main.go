@@ -8,7 +8,9 @@ import (
 	"github.com/fasthttp/router"
 	"github.com/valyala/fasthttp"
 	"log"
+	"net"
 	"os"
+	"time"
 )
 
 const (
@@ -30,27 +32,6 @@ func init() {
 }
 
 func main() {
-	port := os.Getenv("PORT")
-	if port == "" {
-		port = "11400"
-	}
-	log.Printf("LISTENING %s PORT\n", port)
-
-	sslPath := os.Getenv("SSL_PATH")
-	if sslPath == "" {
-		sslPath = "./ssl"
-	}
-
-	cert, err := tls.LoadX509KeyPair(sslPath+"/fullchain.pem", sslPath+"/privkey.pem")
-	if err != nil {
-		log.Fatalf("SSL ERROR: %s\n", err.Error())
-	}
-
-	lis, err := tls.Listen("tcp4", ":"+port, &tls.Config{Certificates: []tls.Certificate{cert}})
-	if err != nil {
-		log.Fatalf("SSL ERROR: %s\n", err.Error())
-	}
-
 	r := router.New()
 
 	r.NotFound = srv.Set404
@@ -84,10 +65,63 @@ func main() {
 	r.PATCH(ApiV1+"/user/{id}/status", fasthttp.RequestHandler(
 		srv.WithMiddlewares(srv.ChangeUserStatus, srv.AuthorizeRoles([]string{jwt.RoleCreator, jwt.RoleAdmin, jwt.RoleModerator}), srv.AddExecutionTimeHeader)))
 
-	s := fasthttp.Server{
-		Name:    "ALSIBERIJ-API-AUTH",
+	errorsStream := make(chan error)
+
+	portSec := os.Getenv("PORT")
+	if portSec == "" {
+		portSec = "11400"
+	}
+	log.Printf("LISTENING SECURE %s PORT\n", portSec)
+
+	portInsec := os.Getenv("PORT_INSEC")
+	if portInsec == "" {
+		portInsec = "10400"
+	}
+	log.Printf("LISTENING INSECURE %s PORT\n", portInsec)
+
+	sslPath := os.Getenv("SSL_PATH")
+	if sslPath == "" {
+		sslPath = "./ssl"
+	}
+
+	cert, err := tls.LoadX509KeyPair(sslPath+"/fullchain.pem", sslPath+"/privkey.pem")
+	if err != nil {
+		log.Fatalf("SSL ERROR: %s", err.Error())
+	}
+
+	lisSec, err := tls.Listen("tcp4", ":"+portSec, &tls.Config{Certificates: []tls.Certificate{cert}})
+	if err != nil {
+		log.Fatalf("SECURE LISTENER ERROR: %s", err.Error())
+	}
+
+	serverSecure := fasthttp.Server{
+		Name:    "API-GO-AUTH:SECURE",
 		Handler: r.Handler,
 	}
 
-	log.Fatal(s.Serve(lis))
+	go Serve(&serverSecure, lisSec, errorsStream)
+
+	lisInsec, err := net.Listen("tcp4", ":"+portInsec)
+	if err != nil {
+		log.Fatalf("INSECURE LISTENER ERROR: %s", err.Error())
+	}
+
+	serverInsecure := fasthttp.Server{
+		Name:    "API-GO-AUTH:INSECURE",
+		Handler: r.Handler,
+	}
+
+	go Serve(&serverInsecure, lisInsec, errorsStream)
+
+	for {
+		log.Println(<-errorsStream)
+	}
+}
+
+func Serve(server *fasthttp.Server, listener net.Listener, errChan chan error) {
+	for {
+		err := server.Serve(listener)
+		errChan <- err
+		time.Sleep(5 * time.Second)
+	}
 }

@@ -17,7 +17,10 @@ COPY config.example.json /config.json
 COPY ssl /bin/ssl
 ENV SSL_PATH "/bin/ssl"
 
-ENV PORT 11400
-EXPOSE $PORT
+ENV PORT_SEC 11400
+ENV PORT_INSEC 10400
+
+EXPOSE $PORT_SEC
+EXPOSE $PORT_INSEC
 
 ENTRYPOINT ["/bin/app"]

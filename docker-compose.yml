@@ -37,6 +37,7 @@ services:
     container_name: api-go-auth
     ports:
       - "11400:11400"
+      - "10400:10400"
     depends_on:
       - postgres
 
