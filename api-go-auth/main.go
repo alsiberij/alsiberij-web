@@ -14,7 +14,7 @@ import (
 )
 
 const (
-	ApiV1 = "/api/v1"
+	V1 = "/v1"
 )
 
 func init() {
@@ -39,31 +39,31 @@ func main() {
 	r.MethodNotAllowed = srv.Set405
 	r.PanicHandler = srv.Set500
 
-	r.GET(ApiV1+"/", fasthttp.RequestHandler(
+	r.GET(V1+"/", fasthttp.RequestHandler(
 		srv.WithMiddlewares(srv.Test, srv.AddExecutionTimeHeader)))
 
-	r.POST(ApiV1+"/login", fasthttp.RequestHandler(
+	r.POST(V1+"/login", fasthttp.RequestHandler(
 		srv.WithMiddlewares(srv.Login, srv.AddExecutionTimeHeader)))
 
-	r.POST(ApiV1+"/refresh", fasthttp.RequestHandler(
+	r.POST(V1+"/refresh", fasthttp.RequestHandler(
 		srv.WithMiddlewares(srv.Refresh, srv.AddExecutionTimeHeader)))
 
-	r.DELETE(ApiV1+"/refresh", fasthttp.RequestHandler(
+	r.DELETE(V1+"/refresh", fasthttp.RequestHandler(
 		srv.WithMiddlewares(srv.Revoke, srv.AddExecutionTimeHeader)))
 
-	r.POST(ApiV1+"/checkEmail", fasthttp.RequestHandler(
+	r.POST(V1+"/checkEmail", fasthttp.RequestHandler(
 		srv.WithMiddlewares(srv.CheckEmail, srv.AddExecutionTimeHeader)))
 
-	r.POST(ApiV1+"/register", fasthttp.RequestHandler(
+	r.POST(V1+"/register", fasthttp.RequestHandler(
 		srv.WithMiddlewares(srv.Register, srv.AddExecutionTimeHeader)))
 
-	r.GET(ApiV1+"/validateJWT", fasthttp.RequestHandler(
+	r.GET(V1+"/validateJWT", fasthttp.RequestHandler(
 		srv.WithMiddlewares(srv.ValidateJWT, srv.Authorize, srv.AddExecutionTimeHeader)))
 
-	r.GET(ApiV1+"/users", fasthttp.RequestHandler(
+	r.GET(V1+"/users", fasthttp.RequestHandler(
 		srv.WithMiddlewares(srv.Users, srv.AuthorizeRoles([]string{jwt.RoleCreator, jwt.RoleAdmin, jwt.RoleModerator}), srv.AddExecutionTimeHeader)))
 
-	r.PATCH(ApiV1+"/user/{id}/status", fasthttp.RequestHandler(
+	r.PATCH(V1+"/user/{id}/status", fasthttp.RequestHandler(
 		srv.WithMiddlewares(srv.ChangeUserStatus, srv.AuthorizeRoles([]string{jwt.RoleCreator, jwt.RoleAdmin, jwt.RoleModerator}), srv.AddExecutionTimeHeader)))
 
 	errorsStream := make(chan error)
