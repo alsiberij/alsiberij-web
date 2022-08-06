@@ -1,0 +1,51 @@
+version: "3"
+services:
+
+  #UTILS
+
+  nginx:
+    build:
+      context: nginx
+      dockerfile: Dockerfile
+    container_name: ngx
+    ports:
+      - "80:80"
+      - "443:443"
+    depends_on:
+      - web-php-main
+      - api-go-auth
+
+  postgres:
+    build:
+      context: postgres
+      dockerfile: Dockerfile
+    container_name: pgs
+    volumes:
+      - ./postgres/data:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
+
+  migrate:
+    build:
+      context: migrate
+      dockerfile: Dockerfile
+    container_name: mgt
+
+  #SERVICES
+
+  api-go-auth:
+    build:
+      context: api-go-auth
+      dockerfile: Dockerfile
+    container_name: api-go-auth
+    ports:
+      - "11400:11400"
+      - "10400:10400"
+    depends_on:
+      - postgres
+
+  web-php-main:
+    build:
+      context: web-php-main
+      dockerfile: Dockerfile
+    container_name: web-php-main
