@@ -25,7 +25,7 @@ func init() {
 
 	err = repository.AuthPostgresRepository.Init(config.AuthPG)
 	if err != nil {
-		log.Fatal(err)
+		log.Fatal("UNABLE CONNECT TO POSTGRES")
 	}
 
 	go repository.EmailCache.GC()
