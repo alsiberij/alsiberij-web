@@ -67,7 +67,7 @@ func (r *PostgresRepository) Init(config PostgresConfig) error {
 		return err
 	}
 
-	log.Printf("CONNECTION #%d SUCCED\n", i)
+	log.Printf("CONNECTION #%d SUCCED\n", i+1)
 	r.connPool = pool
 
 	return nil
