@@ -11,6 +11,7 @@ import (
 
 const (
 	ReconnectTimes = 3
+	ReconnectDelay = 5 * time.Second
 )
 
 type (
@@ -48,14 +49,14 @@ func (r *PostgresRepository) Init(config PostgresConfig) error {
 		pool, err = pgxpool.Connect(context.Background(), dsn)
 		if err != nil {
 			log.Printf("CONNECTION #%d FAILED WITH ERROR: %s\n", i+1, err.Error())
-			time.Sleep(5 * time.Second)
+			time.Sleep(ReconnectDelay)
 			continue
 		}
 
 		err = pool.Ping(context.Background())
 		if err != nil {
 			log.Printf("CONNECTION #%d FAILED WITH ERROR: %s\n", i+1, err.Error())
-			time.Sleep(5 * time.Second)
+			time.Sleep(ReconnectDelay)
 			continue
 		}
 		break
