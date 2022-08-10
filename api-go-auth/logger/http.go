@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"log"
 	"os"
+	"sync"
 	"time"
 )
 
@@ -43,6 +44,10 @@ type (
 	}
 )
 
+var (
+	httpMutex sync.Mutex
+)
+
 func LogServerRequest(req Request, res Response) {
 	requestBodyHash := md5.Sum([]byte(req.Body))
 	req.Body = hex.EncodeToString(requestBodyHash[:])
@@ -60,6 +65,8 @@ func LogServerRequest(req Request, res Response) {
 		},
 	})
 
+	httpMutex.Lock()
+	defer httpMutex.Unlock()
 	f, err := os.OpenFile(fmt.Sprintf(LogsPath+"/"+FilenamePatternForRequests, time.Now().Format(FilenameDateFormat)), os.O_CREATE|os.O_WRONLY|os.O_APPEND, 0222)
 	if err != nil {
 		log.Printf("FAILED TO WRITE LOG: %s", err.Error())
