@@ -1,6 +1,7 @@
 package srv
 
 import (
+	"auth/logger"
 	"encoding/json"
 	"github.com/valyala/fasthttp"
 )
@@ -132,8 +133,13 @@ func Set500(ctx *fasthttp.RequestCtx, i interface{}) {
 	switch T := i.(type) {
 	case error:
 		devMsg = T.Error()
+		go logger.LogError(T, logger.LevelFatal)
+	case string:
+		devMsg = T
+		go logger.LogMessage(T, logger.LevelFatal)
 	default:
-		devMsg = "Panic"
+		devMsg = "Unknown error"
+		go logger.LogMessage(devMsg, logger.LevelFatal)
 	}
 	_ = json.NewEncoder(ctx).Encode(HttpError{
 		HttpCode: fasthttp.StatusInternalServerError,

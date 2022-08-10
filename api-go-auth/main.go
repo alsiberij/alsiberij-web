@@ -2,6 +2,7 @@ package main
 
 import (
 	"auth/jwt"
+	"auth/logger"
 	"auth/repository"
 	"auth/srv"
 	"crypto/tls"
@@ -28,6 +29,12 @@ func init() {
 		log.Fatal("UNABLE CONNECT TO POSTGRES")
 	}
 
+	logsPath := os.Getenv("LOGS_PATH")
+	if logsPath == "" {
+		logsPath = "./logger/logs"
+	}
+	logger.LogsPath = logsPath
+
 	go repository.EmailCache.GC()
 }
 
@@ -40,31 +47,31 @@ func main() {
 	r.PanicHandler = srv.Set500
 
 	r.GET(V1+"/", fasthttp.RequestHandler(
-		srv.WithMiddlewares(srv.Test, srv.AddExecutionTimeHeader)))
+		srv.WithMiddlewares(srv.Test, srv.LogMiddleware)))
 
 	r.POST(V1+"/login", fasthttp.RequestHandler(
-		srv.WithMiddlewares(srv.Login, srv.AddExecutionTimeHeader)))
+		srv.WithMiddlewares(srv.Login, srv.LogMiddleware)))
 
 	r.POST(V1+"/refresh", fasthttp.RequestHandler(
-		srv.WithMiddlewares(srv.Refresh, srv.AddExecutionTimeHeader)))
+		srv.WithMiddlewares(srv.Refresh, srv.LogMiddleware)))
 
 	r.DELETE(V1+"/refresh", fasthttp.RequestHandler(
-		srv.WithMiddlewares(srv.Revoke, srv.AddExecutionTimeHeader)))
+		srv.WithMiddlewares(srv.Revoke, srv.LogMiddleware)))
 
 	r.POST(V1+"/checkEmail", fasthttp.RequestHandler(
-		srv.WithMiddlewares(srv.CheckEmail, srv.AddExecutionTimeHeader)))
+		srv.WithMiddlewares(srv.CheckEmail, srv.LogMiddleware)))
 
 	r.POST(V1+"/register", fasthttp.RequestHandler(
-		srv.WithMiddlewares(srv.Register, srv.AddExecutionTimeHeader)))
+		srv.WithMiddlewares(srv.Register, srv.LogMiddleware)))
 
 	r.GET(V1+"/validateJWT", fasthttp.RequestHandler(
-		srv.WithMiddlewares(srv.ValidateJWT, srv.Authorize, srv.AddExecutionTimeHeader)))
+		srv.WithMiddlewares(srv.ValidateJWT, srv.Authorize, srv.LogMiddleware)))
 
 	r.GET(V1+"/users", fasthttp.RequestHandler(
-		srv.WithMiddlewares(srv.Users, srv.AuthorizeRoles([]string{jwt.RoleCreator, jwt.RoleAdmin, jwt.RoleModerator}), srv.AddExecutionTimeHeader)))
+		srv.WithMiddlewares(srv.Users, srv.AuthorizeRoles([]string{jwt.RoleCreator, jwt.RoleAdmin, jwt.RoleModerator}), srv.LogMiddleware)))
 
 	r.PATCH(V1+"/user/{id}/status", fasthttp.RequestHandler(
-		srv.WithMiddlewares(srv.ChangeUserStatus, srv.AuthorizeRoles([]string{jwt.RoleCreator, jwt.RoleAdmin, jwt.RoleModerator}), srv.AddExecutionTimeHeader)))
+		srv.WithMiddlewares(srv.ChangeUserStatus, srv.AuthorizeRoles([]string{jwt.RoleCreator, jwt.RoleAdmin, jwt.RoleModerator}), srv.LogMiddleware)))
 
 	errorsStream := make(chan error)
 

@@ -2,8 +2,8 @@ package srv
 
 import (
 	"auth/jwt"
+	"auth/logger"
 	"auth/utils"
-	"fmt"
 	"github.com/valyala/fasthttp"
 	"time"
 )
@@ -22,14 +22,6 @@ func WithMiddlewares(h Handler, mds ...Middleware) Handler {
 		handler = mds[i](handler)
 	}
 	return handler
-}
-
-func AddExecutionTimeHeader(h Handler) Handler {
-	return func(ctx *fasthttp.RequestCtx) {
-		start := time.Now()
-		h(ctx)
-		ctx.Response.Header.Add("Execution-Time", fmt.Sprintf("%dms", time.Since(start).Milliseconds()))
-	}
 }
 
 func Authorize(h Handler) Handler {
@@ -76,5 +68,42 @@ func AuthorizeRoles(roles []string) Middleware {
 			ctx.SetUserValue(JwtContext, claims)
 			h(ctx)
 		}
+	}
+}
+
+func LogMiddleware(h Handler) Handler {
+	return func(ctx *fasthttp.RequestCtx) {
+		req := logger.Request{
+			Timestamp: time.Now().Unix(),
+			Method:    utils.BytesToString(ctx.Request.Header.Method()),
+			Path:      utils.BytesToString(ctx.Path()),
+			Protocol:  utils.BytesToString(ctx.Request.Header.Protocol()),
+			Headers:   make([]string, 0, ctx.Request.Header.Len()),
+			Body:      utils.BytesToString(ctx.Request.Body()),
+		}
+
+		ctx.Request.Header.VisitAll(func(key, value []byte) {
+			req.Headers = append(req.Headers,
+				utils.BytesToString(append(append(key, []byte{':', ' '}...), value...)))
+		})
+
+		t1 := time.Now()
+		h(ctx)
+		t2 := time.Now()
+
+		res := logger.Response{
+			Timestamp:     time.Now().Unix(),
+			Protocol:      utils.BytesToString(ctx.Response.Header.Protocol()),
+			StatusCode:    ctx.Response.StatusCode(),
+			Headers:       make([]string, 0, ctx.Response.Header.Len()),
+			Body:          utils.BytesToString(ctx.Response.Body()),
+			ExecutionTime: t2.Sub(t1).Milliseconds(),
+		}
+		ctx.Response.Header.VisitAll(func(key, value []byte) {
+			res.Headers = append(res.Headers,
+				utils.BytesToString(append(append(key, []byte{':', ' '}...), value...)))
+		})
+
+		go logger.LogServerRequest(req, res)
 	}
 }

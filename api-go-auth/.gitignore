@@ -2,3 +2,5 @@ ssl/*
 !ssl/.gitkeep
 config.json
 jwt/SECRET.KEY
+logger/logs/*
+!logger/logs/.gitkeep

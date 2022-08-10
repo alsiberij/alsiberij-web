@@ -17,6 +17,8 @@ COPY config.example.json /config.json
 COPY ssl /bin/ssl
 ENV SSL_PATH "/bin/ssl"
 
+ENV LOGS_PATH "/logs"
+
 ENV PORT_SEC 11400
 ENV PORT_INSEC 10400
 

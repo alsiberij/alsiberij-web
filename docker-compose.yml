@@ -36,6 +36,8 @@ services:
       context: api-go-auth
       dockerfile: Dockerfile
     container_name: api-go-auth
+    volumes:
+      - ./api-go-auth/logger/logs:/logs
     ports:
       - "11400:11400"
       - "10400:10400"

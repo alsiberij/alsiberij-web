@@ -32,3 +32,7 @@ func ExistsIn[T Searchable](haystack []T, needle T) bool {
 	}
 	return false
 }
+
+func BytesToString(slice []byte) string {
+	return *((*string)(unsafe.Pointer(&slice)))
+}
