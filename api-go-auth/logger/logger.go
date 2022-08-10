@@ -7,6 +7,8 @@ const (
 	LevelInfo  logLevel = "INFO"
 
 	FilenameDateFormat = "2006-01-02"
+
+	FilePermissions = 0666
 )
 
 const (

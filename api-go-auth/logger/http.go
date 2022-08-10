@@ -67,7 +67,7 @@ func LogServerRequest(req Request, res Response) {
 
 	httpMutex.Lock()
 	defer httpMutex.Unlock()
-	f, err := os.OpenFile(fmt.Sprintf(LogsPath+"/"+FilenamePatternForRequests, time.Now().Format(FilenameDateFormat)), os.O_CREATE|os.O_WRONLY|os.O_APPEND, 0222)
+	f, err := os.OpenFile(fmt.Sprintf(LogsPath+"/"+FilenamePatternForRequests, time.Now().Format(FilenameDateFormat)), os.O_CREATE|os.O_WRONLY|os.O_APPEND, FilePermissions)
 	if err != nil {
 		log.Printf("FAILED TO WRITE LOG: %s", err.Error())
 		return
