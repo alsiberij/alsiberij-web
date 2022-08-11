@@ -4,6 +4,7 @@ import (
 	"auth/logger"
 	"encoding/json"
 	"github.com/valyala/fasthttp"
+	"runtime/debug"
 )
 
 type (
@@ -162,6 +163,8 @@ func Set500Panic(ctx *fasthttp.RequestCtx, i interface{}) {
 	default:
 		devMsg += "Unknown error"
 	}
+
+	devMsg += string(debug.Stack())
 
 	go logger.LogMessage(devMsg, logger.LevelFatal)
 

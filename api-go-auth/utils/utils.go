@@ -2,12 +2,14 @@ package utils
 
 import (
 	"math/rand"
+	"sync"
 	"time"
 	"unsafe"
 )
 
 var (
-	R = rand.New(rand.NewSource(time.Now().Unix()))
+	R      = rand.New(rand.NewSource(time.Now().Unix()))
+	rMutex sync.Mutex
 )
 
 type (
@@ -18,6 +20,8 @@ type (
 
 func GenerateString(length uint, alphabet string) string {
 	result := make([]byte, length)
+	rMutex.Lock()
+	defer rMutex.Unlock()
 	for i := range result {
 		result[i] = alphabet[R.Int()%len(alphabet)]
 	}

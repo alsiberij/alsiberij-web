@@ -20,14 +20,18 @@ const (
 	RefreshTokenRevokeTypeAllExceptCurrent = "ALL_EXCEPT_CURRENT"
 )
 
+type (
+	TestStruct struct {
+		Status bool `json:"status"`
+	}
+)
+
 var (
 	PostgresAuth repository.Postgres
 )
 
 func Test(ctx *fasthttp.RequestCtx) {
-	_ = json.NewEncoder(ctx).Encode(struct {
-		Status bool `json:"status"`
-	}{Status: true})
+	_ = json.NewEncoder(ctx).Encode(&TestStruct{Status: true})
 	ctx.SetContentType("application/json")
 }
 
