@@ -47,7 +47,7 @@ func Login(ctx *fasthttp.RequestCtx) {
 
 	conn, err := PostgresAuth.AcquireConnection()
 	if err != nil {
-		Set500(ctx, err)
+		Set500Error(ctx, err)
 		return
 	}
 	defer conn.Release()
@@ -56,7 +56,7 @@ func Login(ctx *fasthttp.RequestCtx) {
 
 	user, exists, err := userRep.ByCredentials(request.Login, request.Password)
 	if err != nil {
-		Set500(ctx, err)
+		Set500Error(ctx, err)
 		return
 	}
 	if !exists {
@@ -74,7 +74,7 @@ func Login(ctx *fasthttp.RequestCtx) {
 	refreshToken := utils.GenerateString(RefreshTokenLength, RefreshTokenAlphabet)
 	err = refTokenRep.Create(user.Id, refreshToken)
 	if err != nil {
-		Set500(ctx, err)
+		Set500Error(ctx, err)
 		return
 	}
 
@@ -102,7 +102,7 @@ func Refresh(ctx *fasthttp.RequestCtx) {
 
 	conn, err := PostgresAuth.AcquireConnection()
 	if err != nil {
-		Set500(ctx, err)
+		Set500Error(ctx, err)
 		return
 	}
 	defer conn.Release()
@@ -111,7 +111,7 @@ func Refresh(ctx *fasthttp.RequestCtx) {
 
 	refreshToken, exists, err := refTokenRep.ByTokenNotExpired(request.RefreshToken)
 	if err != nil {
-		Set500(ctx, err)
+		Set500Error(ctx, err)
 		return
 	}
 	if !exists {
@@ -122,7 +122,7 @@ func Refresh(ctx *fasthttp.RequestCtx) {
 	if time.Now().Sub(refreshToken.LastUsedAt) > RefreshTokenLifePeriod {
 		err = refTokenRep.SetExpired(refreshToken.Id)
 		if err != nil {
-			Set500(ctx, err)
+			Set500Error(ctx, err)
 		} else {
 			Set401(ctx)
 		}
@@ -131,7 +131,7 @@ func Refresh(ctx *fasthttp.RequestCtx) {
 
 	err = refTokenRep.UpdateLastUsageTime(refreshToken.Token)
 	if err != nil {
-		Set500(ctx, err)
+		Set500Error(ctx, err)
 		return
 	}
 
@@ -162,7 +162,7 @@ func Revoke(ctx *fasthttp.RequestCtx) {
 
 	conn, err := PostgresAuth.AcquireConnection()
 	if err != nil {
-		Set500(ctx, err)
+		Set500Error(ctx, err)
 		return
 	}
 	defer conn.Release()
@@ -171,7 +171,7 @@ func Revoke(ctx *fasthttp.RequestCtx) {
 
 	_, exists, err := refTokenRep.ByToken(request.RefreshToken)
 	if err != nil {
-		Set500(ctx, err)
+		Set500Error(ctx, err)
 		return
 	}
 	if !exists {
@@ -193,7 +193,7 @@ func Revoke(ctx *fasthttp.RequestCtx) {
 		return
 	}
 	if err != nil {
-		Set500(ctx, err)
+		Set500Error(ctx, err)
 	}
 
 	ctx.SetStatusCode(fasthttp.StatusNoContent)
@@ -242,7 +242,7 @@ func Register(ctx *fasthttp.RequestCtx) {
 
 	conn, err := PostgresAuth.AcquireConnection()
 	if err != nil {
-		Set500(ctx, err)
+		Set500Error(ctx, err)
 		return
 	}
 	defer conn.Release()
@@ -251,7 +251,7 @@ func Register(ctx *fasthttp.RequestCtx) {
 
 	exists, err := userRep.LoginExists(request.Login)
 	if err != nil {
-		Set500(ctx, err)
+		Set500Error(ctx, err)
 		return
 	}
 	if exists {
@@ -261,7 +261,7 @@ func Register(ctx *fasthttp.RequestCtx) {
 
 	exists, err = userRep.EmailExists(request.Email)
 	if err != nil {
-		Set500(ctx, err)
+		Set500Error(ctx, err)
 		return
 	}
 	if exists {
@@ -271,7 +271,7 @@ func Register(ctx *fasthttp.RequestCtx) {
 
 	err = userRep.Create(request.Email, request.Login, request.Password)
 	if err != nil {
-		Set500(ctx, err)
+		Set500Error(ctx, err)
 		return
 	}
 
@@ -281,7 +281,7 @@ func Register(ctx *fasthttp.RequestCtx) {
 func ValidateJWT(ctx *fasthttp.RequestCtx) {
 	claims, ok := ctx.UserValue(JwtContext).(jwt.Claims)
 	if !ok {
-		Set500(ctx, claims)
+		Set403(ctx)
 		return
 	}
 
@@ -298,7 +298,7 @@ func ValidateJWT(ctx *fasthttp.RequestCtx) {
 func Users(ctx *fasthttp.RequestCtx) {
 	conn, err := PostgresAuth.AcquireConnection()
 	if err != nil {
-		Set500(ctx, err)
+		Set500Error(ctx, err)
 		return
 	}
 	defer conn.Release()
@@ -307,7 +307,7 @@ func Users(ctx *fasthttp.RequestCtx) {
 
 	list, err := userRep.AllShort()
 	if err != nil {
-		Set500(ctx, err)
+		Set500Error(ctx, err)
 		return
 	}
 
@@ -335,7 +335,7 @@ func ChangeUserStatus(ctx *fasthttp.RequestCtx) {
 
 	conn, err := PostgresAuth.AcquireConnection()
 	if err != nil {
-		Set500(ctx, err)
+		Set500Error(ctx, err)
 		return
 	}
 	defer conn.Release()
@@ -344,7 +344,7 @@ func ChangeUserStatus(ctx *fasthttp.RequestCtx) {
 
 	user, exists, err := userRep.ById(userId)
 	if err != nil {
-		Set500(ctx, err)
+		Set500Error(ctx, err)
 		return
 	}
 	if !exists {

@@ -128,19 +128,42 @@ func Set405(ctx *fasthttp.RequestCtx) {
 	ctx.SetStatusCode(fasthttp.StatusMethodNotAllowed)
 }
 
-func Set500(ctx *fasthttp.RequestCtx, i interface{}) {
-	var devMsg string
+func Set500Error(ctx *fasthttp.RequestCtx, err error) {
+	devMsg := "ERROR : "
+	if err != nil {
+		devMsg += err.Error()
+		go logger.LogMessage(err.Error(), logger.LevelFatal)
+	} else {
+		devMsg += "empty error"
+	}
+	_ = json.NewEncoder(ctx).Encode(HttpError{
+		HttpCode: fasthttp.StatusInternalServerError,
+		DevMsg:   devMsg,
+		UsrMsg: UserMessage{
+			Message:      "Внутренняя ошибка сервера",
+			InternalCode: 2,
+		},
+	})
+	ctx.SetContentType("application/json")
+	ctx.SetStatusCode(fasthttp.StatusInternalServerError)
+}
+
+func Set500Panic(ctx *fasthttp.RequestCtx, i interface{}) {
+	devMsg := "PANIC : "
+
 	switch T := i.(type) {
 	case error:
-		devMsg = T.Error()
+		devMsg += T.Error()
 		go logger.LogError(T, logger.LevelFatal)
 	case string:
-		devMsg = T
+		devMsg += T
 		go logger.LogMessage(T, logger.LevelFatal)
+	case nil:
+		devMsg += "nil"
 	default:
 		devMsg = "Unknown error"
-		go logger.LogMessage(devMsg, logger.LevelFatal)
 	}
+
 	_ = json.NewEncoder(ctx).Encode(HttpError{
 		HttpCode: fasthttp.StatusInternalServerError,
 		DevMsg:   devMsg,

@@ -47,7 +47,7 @@ func main() {
 
 	r.NotFound = srv.Set404
 	r.MethodNotAllowed = srv.Set405
-	r.PanicHandler = srv.Set500
+	r.PanicHandler = srv.Set500Panic
 
 	r.GET(V1+"/", srv.Test)
 
