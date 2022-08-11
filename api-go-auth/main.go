@@ -75,12 +75,6 @@ func main() {
 	}
 	log.Printf("LISTENING SECURE %s PORT\n", portSec)
 
-	portInsec := os.Getenv("PORT_INSEC")
-	if portInsec == "" {
-		portInsec = "10400"
-	}
-	log.Printf("LISTENING INSECURE %s PORT\n", portInsec)
-
 	sslPath := os.Getenv("SSL_PATH")
 	if sslPath == "" {
 		sslPath = "./ssl"
@@ -97,7 +91,7 @@ func main() {
 	}
 
 	serverSecure := fasthttp.Server{
-		Name:         "API-GO-AUTH-SECURE",
+		Name:         "API-GO-AUTH",
 		Handler:      srv.LogMiddleware(r.Handler),
 		LogAllErrors: true,
 	}
@@ -105,18 +99,6 @@ func main() {
 	errorsStream := make(chan error)
 
 	go Serve(&serverSecure, lisSec, errorsStream)
-
-	lisInsec, err := net.Listen("tcp4", ":"+portInsec)
-	if err != nil {
-		log.Fatalf("INSECURE LISTENER ERROR: %s", err.Error())
-	}
-
-	serverInsecure := fasthttp.Server{
-		Name:    "API-GO-AUTH-INSECURE",
-		Handler: srv.LogMiddleware(r.Handler),
-	}
-
-	go Serve(&serverInsecure, lisInsec, errorsStream)
 
 	for {
 		log.Println(<-errorsStream)
