@@ -61,7 +61,7 @@ func main() {
 
 	r.POST(V1+"/register", srv.Register)
 
-	r.GET(V1+"/validateJWT", srv.ValidateJWT)
+	r.GET(V1+"/validateJWT", srv.WithMiddlewares(srv.ValidateJWT, srv.Authorize))
 
 	r.GET(V1+"/users", srv.WithMiddlewares(srv.Users,
 		srv.AuthorizeRoles([]string{jwt.RoleCreator, jwt.RoleAdmin, jwt.RoleModerator})))
