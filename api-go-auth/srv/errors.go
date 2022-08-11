@@ -132,10 +132,11 @@ func Set500Error(ctx *fasthttp.RequestCtx, err error) {
 	devMsg := "ERROR : "
 	if err != nil {
 		devMsg += err.Error()
-		go logger.LogMessage(err.Error(), logger.LevelFatal)
+		go logger.LogError(err, logger.LevelError)
 	} else {
 		devMsg += "empty error"
 	}
+
 	_ = json.NewEncoder(ctx).Encode(HttpError{
 		HttpCode: fasthttp.StatusInternalServerError,
 		DevMsg:   devMsg,
@@ -154,15 +155,15 @@ func Set500Panic(ctx *fasthttp.RequestCtx, i interface{}) {
 	switch T := i.(type) {
 	case error:
 		devMsg += T.Error()
-		go logger.LogError(T, logger.LevelFatal)
 	case string:
 		devMsg += T
-		go logger.LogMessage(T, logger.LevelFatal)
 	case nil:
 		devMsg += "nil"
 	default:
-		devMsg = "Unknown error"
+		devMsg += "Unknown error"
 	}
+
+	go logger.LogMessage(devMsg, logger.LevelFatal)
 
 	_ = json.NewEncoder(ctx).Encode(HttpError{
 		HttpCode: fasthttp.StatusInternalServerError,
