@@ -103,7 +103,7 @@ func main() {
 	}
 
 	serverSecure := fasthttp.Server{
-		Name:    "API-GO-AUTH:SECURE",
+		Name:    "API-GO-AUTH-SECURE",
 		Handler: r.Handler,
 	}
 
@@ -115,7 +115,7 @@ func main() {
 	}
 
 	serverInsecure := fasthttp.Server{
-		Name:    "API-GO-AUTH:INSECURE",
+		Name:    "API-GO-AUTH-INSECURE",
 		Handler: r.Handler,
 	}
 
