@@ -7,7 +7,7 @@ import (
 )
 
 type (
-	RefreshTokenRepository interface {
+	RefreshTokens interface {
 		Create(userId int64, token string) error
 		ById(id int64) (models.RefreshToken, bool, error)
 		ByUserId(userId int64) ([]models.RefreshToken, error)
@@ -23,18 +23,18 @@ type (
 		Delete(id int64) error
 	}
 
-	RefreshTokenPostgresRepository struct {
+	RefreshTokensPostgres struct {
 		conn pgxtype.Querier
 	}
 )
 
-func (r *RefreshTokenPostgresRepository) Create(userId int64, token string) error {
+func (r *RefreshTokensPostgres) Create(userId int64, token string) error {
 	_, err := r.conn.Exec(context.Background(), `INSERT INTO refresh_tokens("userId", token) VALUES ($1, $2)`,
 		userId, token)
 	return err
 }
 
-func (r *RefreshTokenPostgresRepository) ById(id int64) (models.RefreshToken, bool, error) {
+func (r *RefreshTokensPostgres) ById(id int64) (models.RefreshToken, bool, error) {
 	rows, err := r.conn.Query(context.Background(),
 		`SELECT t.id, t.token, t."isExpired", t."issuedAt", t."lastUsedAt",
        			u.id, u.email, u.login, u.password, u.role, u."createdAt"
@@ -58,7 +58,7 @@ func (r *RefreshTokenPostgresRepository) ById(id int64) (models.RefreshToken, bo
 	return refreshToken, exists, err
 }
 
-func (r *RefreshTokenPostgresRepository) ByUserId(userId int64) ([]models.RefreshToken, error) {
+func (r *RefreshTokensPostgres) ByUserId(userId int64) ([]models.RefreshToken, error) {
 	rows, err := r.conn.Query(context.Background(),
 		`SELECT t.id, t.token, t."isExpired", t."issuedAt", t."lastUsedAt",
        			u.id, u.email, u.login, u.password, u.role, u."createdAt"
@@ -82,7 +82,7 @@ func (r *RefreshTokenPostgresRepository) ByUserId(userId int64) ([]models.Refres
 	return refreshTokens, nil
 }
 
-func (r *RefreshTokenPostgresRepository) ByToken(token string) (models.RefreshToken, bool, error) {
+func (r *RefreshTokensPostgres) ByToken(token string) (models.RefreshToken, bool, error) {
 	rows, err := r.conn.Query(context.Background(),
 		`SELECT t.id, t.token, t."isExpired", t."issuedAt", t."lastUsedAt",
        			u.id, u.email, u.login, u.password, u.role, u."createdAt"
@@ -106,7 +106,7 @@ func (r *RefreshTokenPostgresRepository) ByToken(token string) (models.RefreshTo
 	return refreshToken, exists, err
 }
 
-func (r *RefreshTokenPostgresRepository) ByTokenNotExpired(token string) (models.RefreshToken, bool, error) {
+func (r *RefreshTokensPostgres) ByTokenNotExpired(token string) (models.RefreshToken, bool, error) {
 	rows, err := r.conn.Query(context.Background(),
 		`SELECT t.id, t.token, t."isExpired", t."issuedAt", t."lastUsedAt",
        			u.id, u.email, u.login, u.password, u.role, u."createdAt"
@@ -130,7 +130,7 @@ func (r *RefreshTokenPostgresRepository) ByTokenNotExpired(token string) (models
 	return refreshToken, exists, err
 }
 
-func (r *RefreshTokenPostgresRepository) All() ([]models.RefreshToken, error) {
+func (r *RefreshTokensPostgres) All() ([]models.RefreshToken, error) {
 	rows, err := r.conn.Query(context.Background(),
 		`SELECT t.id, t.token, t."isExpired", t."issuedAt", t."lastUsedAt",
        			u.id, u.email, u.login, u.password, u.role, u."createdAt"
@@ -153,38 +153,38 @@ func (r *RefreshTokenPostgresRepository) All() ([]models.RefreshToken, error) {
 	return refreshTokens, nil
 }
 
-func (r *RefreshTokenPostgresRepository) SetExpired(id int64) error {
+func (r *RefreshTokensPostgres) SetExpired(id int64) error {
 	_, err := r.conn.Exec(context.Background(), `UPDATE refresh_tokens SET "isExpired" = TRUE WHERE id = $1`, id)
 	return err
 }
 
-func (r *RefreshTokenPostgresRepository) UpdateLastUsageTime(token string) error {
+func (r *RefreshTokensPostgres) UpdateLastUsageTime(token string) error {
 	_, err := r.conn.Exec(context.Background(), `UPDATE refresh_tokens SET "lastUsedAt" = CURRENT_TIMESTAMP WHERE token = $1`,
 		token)
 	return err
 }
 
-func (r *RefreshTokenPostgresRepository) Delete(id int64) error {
+func (r *RefreshTokensPostgres) Delete(id int64) error {
 	_, err := r.conn.Query(context.Background(), `DELETE FROM refresh_tokens WHERE id = $1`, id)
 	return err
 }
 
-func (r *RefreshTokenPostgresRepository) SetExpiredByUserId(userId int64) error {
+func (r *RefreshTokensPostgres) SetExpiredByUserId(userId int64) error {
 	_, err := r.conn.Exec(context.Background(), `UPDATE refresh_tokens SET "isExpired" = TRUE WHERE "userId" = $1`, userId)
 	return err
 }
 
-func (r *RefreshTokenPostgresRepository) SetExpiredByToken(token string) error {
+func (r *RefreshTokensPostgres) SetExpiredByToken(token string) error {
 	_, err := r.conn.Exec(context.Background(), `UPDATE refresh_tokens SET "isExpired" = TRUE WHERE token = $1`, token)
 	return err
 }
 
-func (r *RefreshTokenPostgresRepository) SetExpiredByTokenBelongingUser(token string) error {
+func (r *RefreshTokensPostgres) SetExpiredByTokenBelongingUser(token string) error {
 	_, err := r.conn.Exec(context.Background(), `UPDATE refresh_tokens SET "isExpired" = TRUE WHERE "userId" = (SELECT "userId" FROM refresh_tokens WHERE token = $1)`, token)
 	return err
 }
 
-func (r *RefreshTokenPostgresRepository) SetExpiredByTokenBelongingUserExceptCurrent(token string) error {
+func (r *RefreshTokensPostgres) SetExpiredByTokenBelongingUserExceptCurrent(token string) error {
 	_, err := r.conn.Exec(context.Background(), `UPDATE refresh_tokens SET "isExpired" = TRUE WHERE "userId" = (SELECT "userId" FROM refresh_tokens WHERE token = $1) AND token != $1`, token)
 	return err
 }

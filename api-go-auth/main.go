@@ -24,10 +24,11 @@ func init() {
 		log.Fatal(err)
 	}
 
-	err = repository.AuthPostgresRepository.Init(config.AuthPG)
+	pgs, err := repository.New(config.AuthPGS)
 	if err != nil {
 		log.Fatal("UNABLE CONNECT TO POSTGRES")
 	}
+	srv.PostgresAuth = pgs
 
 	err = logger.Init(config.Elasticsearch)
 	if err != nil {

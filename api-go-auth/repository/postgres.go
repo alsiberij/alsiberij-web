@@ -2,16 +2,10 @@ package repository
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"github.com/jackc/pgtype/pgxtype"
 	"github.com/jackc/pgx/v4/pgxpool"
-	"log"
-	"time"
-)
-
-const (
-	ReconnectTimes = 3
-	ReconnectDelay = 5 * time.Second
 )
 
 type (
@@ -25,62 +19,44 @@ type (
 		MaxCons  int    `json:"maxCons"`
 	}
 
-	PostgresRepository struct {
-		config   PostgresConfig
+	Postgres struct {
 		connPool *pgxpool.Pool
-		//TODO Check for initialization
+		isActive bool
 	}
 )
 
 var (
-	AuthPostgresRepository PostgresRepository
+	errPostgresNotInitialized = errors.New("postgres not initialized")
 )
 
-func (r *PostgresRepository) Init(config PostgresConfig) error {
-	var i int
-	var err error
-	var pool *pgxpool.Pool
-
+func New(config PostgresConfig) (Postgres, error) {
 	dsn := fmt.Sprintf("postgres://%s:%s@%s:%d/%s?sslmode=%s&pool_max_conns=%d",
 		config.User, config.Password, config.Host, config.Port, config.DbName, config.SslMode, config.MaxCons)
 
-	for ; i < ReconnectTimes; i++ {
-		log.Printf("CONNECTING POSTGRES AS %s #%d\n", config.User, i+1)
-		pool, err = pgxpool.Connect(context.Background(), dsn)
-		if err != nil {
-			log.Printf("CONNECTION #%d FAILED WITH ERROR: %s\n", i+1, err.Error())
-			time.Sleep(ReconnectDelay)
-			continue
-		}
-
-		err = pool.Ping(context.Background())
-		if err != nil {
-			log.Printf("CONNECTION #%d FAILED WITH ERROR: %s\n", i+1, err.Error())
-			time.Sleep(ReconnectDelay)
-			continue
-		}
-		break
+	pool, err := pgxpool.Connect(context.Background(), dsn)
+	if err != nil {
+		return Postgres{}, err
 	}
 
-	if i == ReconnectTimes {
-		log.Println("ALL RETRIES FAILED")
-		return err
+	err = pool.Ping(context.Background())
+	if err != nil {
+		return Postgres{}, err
 	}
 
-	log.Printf("CONNECTION #%d SUCCED\n", i+1)
-	r.connPool = pool
-
-	return nil
+	return Postgres{connPool: pool, isActive: true}, nil
 }
 
-func (r *PostgresRepository) AcquireConnection() (*pgxpool.Conn, error) {
+func (r *Postgres) AcquireConnection() (*pgxpool.Conn, error) {
+	if !r.isActive {
+		return nil, errPostgresNotInitialized
+	}
 	return r.connPool.Acquire(context.Background())
 }
 
-func (r *PostgresRepository) UserRepository(q pgxtype.Querier) UserRepository {
-	return &UserPostgresRepository{conn: q}
+func (r *Postgres) Users(q pgxtype.Querier) Users {
+	return &UsersPostgres{conn: q}
 }
 
-func (r *PostgresRepository) RefreshTokenRepository(q pgxtype.Querier) RefreshTokenRepository {
-	return &RefreshTokenPostgresRepository{conn: q}
+func (r *Postgres) RefreshTokens(q pgxtype.Querier) RefreshTokens {
+	return &RefreshTokensPostgres{conn: q}
 }

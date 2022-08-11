@@ -9,7 +9,7 @@ import (
 
 type (
 	Config struct {
-		AuthPG        repository.PostgresConfig  `json:"authPG"`
+		AuthPGS       repository.PostgresConfig  `json:"authPGS"`
 		Elasticsearch logger.ElasticSearchConfig `json:"elasticsearch"`
 	}
 )

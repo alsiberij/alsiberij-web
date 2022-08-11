@@ -1,5 +1,5 @@
 {
-  "authPG": {
+  "authPGS": {
     "user": "als_auth",
     "password": "als_auth",
     "host": "pgs",

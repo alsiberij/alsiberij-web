@@ -9,7 +9,7 @@ import (
 )
 
 type (
-	UserRepository interface {
+	Users interface {
 		Create(email, login, password string) error
 		ById(id int64) (models.User, bool, error)
 		All() ([]models.User, error)
@@ -21,12 +21,12 @@ type (
 		ChangeStatus(id int64, isBanned bool) error
 	}
 
-	UserPostgresRepository struct {
+	UsersPostgres struct {
 		conn pgxtype.Querier
 	}
 )
 
-func (r *UserPostgresRepository) Create(email, login, password string) error {
+func (r *UsersPostgres) Create(email, login, password string) error {
 	h := sha512.New()
 	h.Write([]byte(password))
 	password = hex.EncodeToString(h.Sum(nil))
@@ -40,7 +40,7 @@ func (r *UserPostgresRepository) Create(email, login, password string) error {
 	return nil
 }
 
-func (r *UserPostgresRepository) ById(id int64) (models.User, bool, error) {
+func (r *UsersPostgres) ById(id int64) (models.User, bool, error) {
 	row, err := r.conn.Query(context.Background(), `SELECT id, email, login, password, role, "createdAt", "isBanned" FROM users WHERE id = $1`,
 		id)
 	if err != nil {
@@ -57,7 +57,7 @@ func (r *UserPostgresRepository) ById(id int64) (models.User, bool, error) {
 	return user, exists, err
 }
 
-func (r *UserPostgresRepository) All() ([]models.User, error) {
+func (r *UsersPostgres) All() ([]models.User, error) {
 	row, err := r.conn.Query(context.Background(), `SELECT id, email, login, password, role, "createdAt", "isBanned" FROM users ORDER BY id DESC`)
 	if err != nil {
 		return nil, err
@@ -76,7 +76,7 @@ func (r *UserPostgresRepository) All() ([]models.User, error) {
 	return users, nil
 }
 
-func (r *UserPostgresRepository) AllShort() ([]models.UserShort, error) {
+func (r *UsersPostgres) AllShort() ([]models.UserShort, error) {
 	row, err := r.conn.Query(context.Background(), `SELECT id, email, login, role, "createdAt", "isBanned" FROM users ORDER BY id DESC`)
 	if err != nil {
 		return nil, err
@@ -95,7 +95,7 @@ func (r *UserPostgresRepository) AllShort() ([]models.UserShort, error) {
 	return users, nil
 }
 
-func (r *UserPostgresRepository) ByCredentials(login, password string) (models.User, bool, error) {
+func (r *UsersPostgres) ByCredentials(login, password string) (models.User, bool, error) {
 	h := sha512.New()
 	h.Write([]byte(password))
 	password = hex.EncodeToString(h.Sum(nil))
@@ -116,12 +116,12 @@ func (r *UserPostgresRepository) ByCredentials(login, password string) (models.U
 	return user, exists, err
 }
 
-func (r *UserPostgresRepository) Delete(id int64) error {
+func (r *UsersPostgres) Delete(id int64) error {
 	_, err := r.conn.Exec(context.Background(), `DELETE FROM users WHERE id = $1`, id)
 	return err
 }
 
-func (r *UserPostgresRepository) EmailExists(email string) (bool, error) {
+func (r *UsersPostgres) EmailExists(email string) (bool, error) {
 	var exists bool
 	err := r.conn.QueryRow(context.Background(), `SELECT EXISTS (SELECT FROM users WHERE email = $1)`, email).
 		Scan(&exists)
@@ -132,7 +132,7 @@ func (r *UserPostgresRepository) EmailExists(email string) (bool, error) {
 	return exists, nil
 }
 
-func (r *UserPostgresRepository) LoginExists(login string) (bool, error) {
+func (r *UsersPostgres) LoginExists(login string) (bool, error) {
 	var exists bool
 	err := r.conn.QueryRow(context.Background(), `SELECT EXISTS (SELECT FROM users WHERE login = $1)`, login).
 		Scan(&exists)
@@ -143,7 +143,7 @@ func (r *UserPostgresRepository) LoginExists(login string) (bool, error) {
 	return exists, nil
 }
 
-func (r *UserPostgresRepository) ChangeStatus(id int64, isBanned bool) error {
+func (r *UsersPostgres) ChangeStatus(id int64, isBanned bool) error {
 	_, err := r.conn.Exec(context.Background(), `UPDATE users SET "isBanned" = $1 WHERE id = $2`, isBanned, id)
 	return err
 }
