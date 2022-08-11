@@ -7,6 +7,8 @@ import (
 	"unsafe"
 )
 
+//TODO wrap r with mutex
+
 var (
 	R      = rand.New(rand.NewSource(time.Now().Unix()))
 	rMutex sync.Mutex
