@@ -4,7 +4,6 @@ import (
 	"crypto/md5"
 	"encoding/hex"
 	"encoding/json"
-	"log"
 	"time"
 )
 
@@ -37,11 +36,6 @@ type (
 )
 
 func LogServerRequest(req Request, res Response) {
-	if elasticsearchClient.Conn == nil {
-		log.Println("ELASTICSEARCH CLIENT IS NOT ALIVE")
-		return
-	}
-
 	requestBodyHash := md5.Sum([]byte(req.Body))
 	req.Body = hex.EncodeToString(requestBodyHash[:])
 

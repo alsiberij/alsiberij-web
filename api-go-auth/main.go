@@ -16,7 +16,10 @@ import (
 
 const (
 	V1 = "/v1"
+	V0 = "/v0"
 )
+
+//TODO graceful shutdown, redis cache, line 32 refactor
 
 func init() {
 	config, err := ReadConfig("config.json")
@@ -26,14 +29,9 @@ func init() {
 
 	pgs, err := repository.New(config.AuthPGS)
 	if err != nil {
-		log.Fatal("UNABLE CONNECT TO POSTGRES")
+		log.Fatalf("UNABLE CONNECT TO POSTGRES: %s", err.Error())
 	}
 	srv.PostgresAuth = pgs
-
-	err = logger.Init(config.Elasticsearch)
-	if err != nil {
-		log.Fatal("UNABLE TO CONNECT TO ELASTICSEARCH")
-	}
 
 	logsPath := os.Getenv("LOGS_PATH")
 	if logsPath == "" {
@@ -53,26 +51,35 @@ func main() {
 	r.PanicHandler = srv.Set500
 
 	r.GET(V1+"/", srv.WithMiddlewares(srv.Test, srv.LogMiddleware))
+	r.GET(V0+"/", srv.Test)
 
 	r.POST(V1+"/login", srv.WithMiddlewares(srv.Login, srv.LogMiddleware))
+	r.POST(V0+"/login", srv.Login)
 
 	r.POST(V1+"/refresh", srv.WithMiddlewares(srv.Refresh, srv.LogMiddleware))
+	r.POST(V0+"/refresh", srv.Refresh)
 
 	r.DELETE(V1+"/refresh", srv.WithMiddlewares(srv.Revoke, srv.LogMiddleware))
+	r.DELETE(V0+"/refresh", srv.Revoke)
 
 	r.POST(V1+"/checkEmail", srv.WithMiddlewares(srv.CheckEmail, srv.LogMiddleware))
+	r.POST(V0+"/checkEmail", srv.CheckEmail)
 
 	r.POST(V1+"/register", srv.WithMiddlewares(srv.Register, srv.LogMiddleware))
+	r.POST(V0+"/register", srv.Register)
 
 	r.GET(V1+"/validateJWT", srv.WithMiddlewares(srv.ValidateJWT, srv.Authorize, srv.LogMiddleware))
+	r.GET(V0+"/validateJWT", srv.ValidateJWT)
 
 	r.GET(V1+"/users", srv.WithMiddlewares(srv.Users,
 		srv.AuthorizeRoles([]string{jwt.RoleCreator, jwt.RoleAdmin, jwt.RoleModerator}), srv.LogMiddleware))
+	r.GET(V0+"/users", srv.WithMiddlewares(srv.Users,
+		srv.AuthorizeRoles([]string{jwt.RoleCreator, jwt.RoleAdmin, jwt.RoleModerator})))
 
 	r.PATCH(V1+"/user/{id}/status", srv.WithMiddlewares(srv.ChangeUserStatus,
 		srv.AuthorizeRoles([]string{jwt.RoleCreator, jwt.RoleAdmin, jwt.RoleModerator}), srv.LogMiddleware))
-
-	errorsStream := make(chan error)
+	r.PATCH(V0+"/user/{id}/status", srv.WithMiddlewares(srv.ChangeUserStatus,
+		srv.AuthorizeRoles([]string{jwt.RoleCreator, jwt.RoleAdmin, jwt.RoleModerator})))
 
 	portSec := os.Getenv("PORT")
 	if portSec == "" {
@@ -105,6 +112,8 @@ func main() {
 		Name:    "API-GO-AUTH-SECURE",
 		Handler: r.Handler,
 	}
+
+	errorsStream := make(chan error)
 
 	go Serve(&serverSecure, lisSec, errorsStream)
 

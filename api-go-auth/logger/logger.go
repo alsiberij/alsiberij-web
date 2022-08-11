@@ -1,11 +1,7 @@
 package logger
 
 import (
-	"bytes"
-	"context"
 	"fmt"
-	"github.com/elastic/go-elasticsearch/v8"
-	"github.com/elastic/go-elasticsearch/v8/esapi"
 	"log"
 	"os"
 	"sync"
@@ -42,10 +38,6 @@ type (
 		Port     int    `json:"port"`
 	}
 
-	elasticsearchConnection struct {
-		Conn *elasticsearch.Client
-	}
-
 	BaseRecord struct {
 		Timestamp string `json:"timestamp"`
 		Level     string `json:"logLevel"`
@@ -56,47 +48,10 @@ type (
 var (
 	LogsPath string
 
-	elasticsearchClient elasticsearchConnection
-
 	fileMutex sync.Mutex
 )
 
-func Init(config ElasticSearchConfig) error {
-	cfg := elasticsearch.Config{
-		Addresses: []string{
-			fmt.Sprintf("%s://%s:%d", config.Protocol, config.Host, config.Port),
-		},
-	}
-	cl, err := elasticsearch.NewClient(cfg)
-	if err != nil {
-		return err
-	}
-
-	_, err = cl.Ping()
-	if err != nil {
-		return err
-	}
-
-	elasticsearchClient.Conn = cl
-
-	return nil
-}
-
 func writeLog(content []byte) {
-	rq := esapi.IndexRequest{Index: fmt.Sprintf(IndexPatternLogs, time.Now().Format(DateFormat)),
-		Body: bytes.NewReader(content)}
-	ctx, cancel := context.WithTimeout(context.Background(), time.Second*5)
-	defer cancel()
-	r, err := rq.Do(ctx, elasticsearchClient.Conn)
-	if err != nil {
-		log.Printf("FAILED TO WRITE LOG: %s", err.Error())
-	} else {
-		if r.IsError() {
-			log.Printf("FAILED TO WRITE LOG: %s", r.String())
-		}
-		_ = r.Body.Close()
-	}
-
 	fileMutex.Lock()
 	defer fileMutex.Unlock()
 	f, err := os.OpenFile(fmt.Sprintf(LogsPath+"/"+FilenamePatternLogs, time.Now().Format(DateFormat)), os.O_CREATE|os.O_WRONLY|os.O_APPEND, FilePermissions)
