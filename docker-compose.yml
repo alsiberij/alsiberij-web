@@ -29,6 +29,21 @@ services:
       dockerfile: Dockerfile
     container_name: mgt
 
+  elasticsearch:
+    build:
+      context: elasticsearch
+      dockerfile: Dockerfile
+    container_name: els
+    environment:
+      - xpack.security.enabled=false
+      - discovery.type=single-node
+      - cluster.routing.allocation.disk.watermark.high=99%
+      - cluster.routing.allocation.disk.watermark.flood_stage=99%
+    volumes:
+      - ./elasticsearch/data:/usr/share/elasticsearch/data
+    ports:
+      - "9200:9200"
+
   #SERVICES
 
   api-go-auth:
