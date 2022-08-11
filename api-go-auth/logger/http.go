@@ -1,8 +1,6 @@
 package logger
 
 import (
-	"crypto/md5"
-	"encoding/hex"
 	"encoding/json"
 	"time"
 )
@@ -36,11 +34,11 @@ type (
 )
 
 func LogServerRequest(req Request, res Response) {
-	requestBodyHash := md5.Sum([]byte(req.Body))
-	req.Body = hex.EncodeToString(requestBodyHash[:])
+	//requestBodyHash := md5.Sum([]byte(req.Body))
+	//req.Body = hex.EncodeToString(requestBodyHash[:])
 
-	responseBodyHash := md5.Sum([]byte(res.Body))
-	res.Body = hex.EncodeToString(responseBodyHash[:])
+	//responseBodyHash := md5.Sum([]byte(res.Body))
+	//res.Body = hex.EncodeToString(responseBodyHash[:])
 
 	content, _ := json.Marshal(&ServerRecord{
 		BaseRecord: BaseRecord{

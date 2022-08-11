@@ -20,10 +20,6 @@ const (
 	RefreshTokenRevokeTypeAllExceptCurrent = "ALL_EXCEPT_CURRENT"
 )
 
-type (
-	Handler fasthttp.RequestHandler
-)
-
 var (
 	PostgresAuth repository.Postgres
 )

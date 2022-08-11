@@ -13,10 +13,10 @@ const (
 )
 
 type (
-	Middleware func(Handler) Handler
+	Middleware func(handler fasthttp.RequestHandler) fasthttp.RequestHandler
 )
 
-func WithMiddlewares(h Handler, mds ...Middleware) fasthttp.RequestHandler {
+func WithMiddlewares(h fasthttp.RequestHandler, mds ...Middleware) fasthttp.RequestHandler {
 	handler := h
 	for i := range mds {
 		handler = mds[i](handler)
@@ -24,7 +24,7 @@ func WithMiddlewares(h Handler, mds ...Middleware) fasthttp.RequestHandler {
 	return fasthttp.RequestHandler(handler)
 }
 
-func Authorize(h Handler) Handler {
+func Authorize(h fasthttp.RequestHandler) fasthttp.RequestHandler {
 	return func(ctx *fasthttp.RequestCtx) {
 		authorization := string(ctx.Request.Header.Peek("Authorization"))
 		if len(authorization) < 7 {
@@ -45,7 +45,7 @@ func Authorize(h Handler) Handler {
 }
 
 func AuthorizeRoles(roles []string) Middleware {
-	return func(h Handler) Handler {
+	return func(h fasthttp.RequestHandler) fasthttp.RequestHandler {
 		return func(ctx *fasthttp.RequestCtx) {
 			authorization := string(ctx.Request.Header.Peek("Authorization"))
 			if len(authorization) < 7 {
@@ -71,7 +71,7 @@ func AuthorizeRoles(roles []string) Middleware {
 	}
 }
 
-func LogMiddleware(h Handler) Handler {
+func LogMiddleware(h fasthttp.RequestHandler) fasthttp.RequestHandler {
 	return func(ctx *fasthttp.RequestCtx) {
 		req := logger.Request{
 			Timestamp: time.Now().Unix(),

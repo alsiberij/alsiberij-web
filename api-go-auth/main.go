@@ -16,7 +16,6 @@ import (
 
 const (
 	V1 = "/v1"
-	V0 = "/v0"
 )
 
 //TODO graceful shutdown, redis cache, line 32 refactor
@@ -50,35 +49,24 @@ func main() {
 	r.MethodNotAllowed = srv.Set405
 	r.PanicHandler = srv.Set500
 
-	r.GET(V1+"/", srv.WithMiddlewares(srv.Test, srv.LogMiddleware))
-	r.GET(V0+"/", srv.Test)
+	r.GET(V1+"/", srv.Test)
 
-	r.POST(V1+"/login", srv.WithMiddlewares(srv.Login, srv.LogMiddleware))
-	r.POST(V0+"/login", srv.Login)
+	r.POST(V1+"/login", srv.Login)
 
-	r.POST(V1+"/refresh", srv.WithMiddlewares(srv.Refresh, srv.LogMiddleware))
-	r.POST(V0+"/refresh", srv.Refresh)
+	r.POST(V1+"/refresh", srv.Refresh)
 
-	r.DELETE(V1+"/refresh", srv.WithMiddlewares(srv.Revoke, srv.LogMiddleware))
-	r.DELETE(V0+"/refresh", srv.Revoke)
+	r.DELETE(V1+"/refresh", srv.Revoke)
 
-	r.POST(V1+"/checkEmail", srv.WithMiddlewares(srv.CheckEmail, srv.LogMiddleware))
-	r.POST(V0+"/checkEmail", srv.CheckEmail)
+	r.POST(V1+"/checkEmail", srv.CheckEmail)
 
-	r.POST(V1+"/register", srv.WithMiddlewares(srv.Register, srv.LogMiddleware))
-	r.POST(V0+"/register", srv.Register)
+	r.POST(V1+"/register", srv.Register)
 
-	r.GET(V1+"/validateJWT", srv.WithMiddlewares(srv.ValidateJWT, srv.Authorize, srv.LogMiddleware))
-	r.GET(V0+"/validateJWT", srv.ValidateJWT)
+	r.GET(V1+"/validateJWT", srv.ValidateJWT)
 
 	r.GET(V1+"/users", srv.WithMiddlewares(srv.Users,
-		srv.AuthorizeRoles([]string{jwt.RoleCreator, jwt.RoleAdmin, jwt.RoleModerator}), srv.LogMiddleware))
-	r.GET(V0+"/users", srv.WithMiddlewares(srv.Users,
 		srv.AuthorizeRoles([]string{jwt.RoleCreator, jwt.RoleAdmin, jwt.RoleModerator})))
 
 	r.PATCH(V1+"/user/{id}/status", srv.WithMiddlewares(srv.ChangeUserStatus,
-		srv.AuthorizeRoles([]string{jwt.RoleCreator, jwt.RoleAdmin, jwt.RoleModerator}), srv.LogMiddleware))
-	r.PATCH(V0+"/user/{id}/status", srv.WithMiddlewares(srv.ChangeUserStatus,
 		srv.AuthorizeRoles([]string{jwt.RoleCreator, jwt.RoleAdmin, jwt.RoleModerator})))
 
 	portSec := os.Getenv("PORT")
@@ -109,8 +97,9 @@ func main() {
 	}
 
 	serverSecure := fasthttp.Server{
-		Name:    "API-GO-AUTH-SECURE",
-		Handler: r.Handler,
+		Name:         "API-GO-AUTH-SECURE",
+		Handler:      srv.LogMiddleware(r.Handler),
+		LogAllErrors: true,
 	}
 
 	errorsStream := make(chan error)
@@ -124,7 +113,7 @@ func main() {
 
 	serverInsecure := fasthttp.Server{
 		Name:    "API-GO-AUTH-INSECURE",
-		Handler: r.Handler,
+		Handler: srv.LogMiddleware(r.Handler),
 	}
 
 	go Serve(&serverInsecure, lisInsec, errorsStream)
