@@ -26,9 +26,9 @@ type (
 	}
 
 	PostgresRepository struct {
-		config PostgresConfig
-
+		config   PostgresConfig
 		connPool *pgxpool.Pool
+		//TODO Check for initialization
 	}
 )
 
@@ -45,7 +45,7 @@ func (r *PostgresRepository) Init(config PostgresConfig) error {
 		config.User, config.Password, config.Host, config.Port, config.DbName, config.SslMode, config.MaxCons)
 
 	for ; i < ReconnectTimes; i++ {
-		log.Printf("CONNECTING #%d [%s]...\n", i+1, dsn)
+		log.Printf("CONNECTING POSTGRES AS %s #%d\n", config.User, i+1)
 		pool, err = pgxpool.Connect(context.Background(), dsn)
 		if err != nil {
 			log.Printf("CONNECTION #%d FAILED WITH ERROR: %s\n", i+1, err.Error())
