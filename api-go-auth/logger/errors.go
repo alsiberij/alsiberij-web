@@ -2,28 +2,14 @@ package logger
 
 import (
 	"encoding/json"
-	"fmt"
-	"log"
-	"os"
-	"sync"
 	"time"
 )
 
-const (
-	FilenamePatternForErrors = "errors_%s.log"
-)
-
 type (
-	RecordErrors struct {
-		Timestamp int64  `json:"timestamp"`
-		Level     string `json:"logLevel"`
-		Type      int    `json:"type"`
-		Content   string `json:"content"`
+	ErrorsRecord struct {
+		BaseRecord
+		Content string `json:"content"`
 	}
-)
-
-var (
-	errorMutex sync.Mutex
 )
 
 func LogError(err error, lvl logLevel) {
@@ -39,26 +25,14 @@ func LogMessage(message string, lvl logLevel) {
 		return
 	}
 
-	content, _ := json.Marshal(&RecordErrors{
-		Timestamp: time.Now().Unix(),
-		Level:     string(lvl),
-		Type:      LogTypeError,
-		Content:   message,
+	content, _ := json.Marshal(&ErrorsRecord{
+		BaseRecord: BaseRecord{
+			Timestamp: time.Now().Format(TimeFormat),
+			Level:     string(lvl),
+			Type:      LogTypeError,
+		},
+		Content: message,
 	})
 
-	errorMutex.Lock()
-	defer errorMutex.Unlock()
-	f, err := os.OpenFile(fmt.Sprintf(LogsPath+"/"+FilenamePatternForErrors, time.Now().Format(FilenameDateFormat)), os.O_CREATE|os.O_WRONLY|os.O_APPEND, FilePermissions)
-	if err != nil {
-		log.Printf("FAILED TO WRITE LOG: %s", err.Error())
-		return
-	}
-
-	_, err = f.Write(content)
-	_, err = f.Write([]byte{'\n'})
-	if err != nil {
-		log.Printf("FAILED TO WRITE LOG: %s", err.Error())
-	}
-
-	_ = f.Close()
+	writeLog(content)
 }

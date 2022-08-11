@@ -7,5 +7,10 @@
     "dbName": "als_db",
     "sslMode": "disable",
     "maxCons": 16
+  },
+  "elasticsearch": {
+    "protocol": "http",
+    "host": "els",
+    "port": 9200
   }
 }

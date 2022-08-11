@@ -4,15 +4,7 @@ import (
 	"crypto/md5"
 	"encoding/hex"
 	"encoding/json"
-	"fmt"
-	"log"
-	"os"
-	"sync"
 	"time"
-)
-
-const (
-	FilenamePatternForRequests = "requests_%s.log"
 )
 
 type (
@@ -32,20 +24,15 @@ type (
 		Body          string   `json:"body"`
 		ExecutionTime int64    `json:"executionTime"`
 	}
-	ServerRecord struct {
-		Timestamp int64               `json:"timestamp"`
-		Level     string              `json:"level"`
-		Type      int                 `json:"type"`
-		Content   serverRecordContent `json:"content"`
-	}
 	serverRecordContent struct {
 		Request  Request  `json:"request"`
 		Response Response `json:"response"`
 	}
-)
 
-var (
-	httpMutex sync.Mutex
+	ServerRecord struct {
+		BaseRecord
+		Content serverRecordContent `json:"content"`
+	}
 )
 
 func LogServerRequest(req Request, res Response) {
@@ -56,28 +43,16 @@ func LogServerRequest(req Request, res Response) {
 	res.Body = hex.EncodeToString(responseBodyHash[:])
 
 	content, _ := json.Marshal(&ServerRecord{
-		Timestamp: time.Now().Unix(),
-		Level:     string(LevelInfo),
-		Type:      LogTypeRequest,
+		BaseRecord: BaseRecord{
+			Timestamp: time.Now().Format(TimeFormat),
+			Level:     string(LevelInfo),
+			Type:      LogTypeRequest,
+		},
 		Content: serverRecordContent{
 			Request:  req,
 			Response: res,
 		},
 	})
 
-	httpMutex.Lock()
-	defer httpMutex.Unlock()
-	f, err := os.OpenFile(fmt.Sprintf(LogsPath+"/"+FilenamePatternForRequests, time.Now().Format(FilenameDateFormat)), os.O_CREATE|os.O_WRONLY|os.O_APPEND, FilePermissions)
-	if err != nil {
-		log.Printf("FAILED TO WRITE LOG: %s", err.Error())
-		return
-	}
-
-	_, err = f.Write(content)
-	_, err = f.Write([]byte{'\n'})
-	if err != nil {
-		log.Printf("FAILED TO WRITE LOG: %s", err.Error())
-	}
-
-	_ = f.Close()
+	writeLog(content)
 }

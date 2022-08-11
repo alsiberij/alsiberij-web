@@ -1,6 +1,7 @@
 package main
 
 import (
+	"auth/logger"
 	"auth/repository"
 	"encoding/json"
 	"os"
@@ -8,7 +9,8 @@ import (
 
 type (
 	Config struct {
-		AuthPG repository.PostgresConfig `json:"authPG"`
+		AuthPG        repository.PostgresConfig  `json:"authPG"`
+		Elasticsearch logger.ElasticSearchConfig `json:"elasticsearch"`
 	}
 )
 

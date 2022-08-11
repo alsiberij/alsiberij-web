@@ -29,6 +29,11 @@ func init() {
 		log.Fatal("UNABLE CONNECT TO POSTGRES")
 	}
 
+	err = logger.Init(config.Elasticsearch)
+	if err != nil {
+		log.Fatal("UNABLE TO CONNECT TO ELASTICSEARCH")
+	}
+
 	logsPath := os.Getenv("LOGS_PATH")
 	if logsPath == "" {
 		logsPath = "./logger/logs"
