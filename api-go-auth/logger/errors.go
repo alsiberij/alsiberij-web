@@ -2,6 +2,7 @@ package logger
 
 import (
 	"encoding/json"
+	"log"
 	"time"
 )
 
@@ -21,6 +22,11 @@ func LogError(err error, lvl logLevel) {
 }
 
 func LogMessage(message string, lvl logLevel) {
+	if elasticsearchClient.Conn == nil {
+		log.Println("ELASTICSEARCH CLIENT IS NOT ALIVE")
+		return
+	}
+
 	if message == "" {
 		return
 	}

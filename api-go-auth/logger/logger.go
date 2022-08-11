@@ -42,6 +42,10 @@ type (
 		Port     int    `json:"port"`
 	}
 
+	elasticsearchConnection struct {
+		Conn *elasticsearch.Client
+	}
+
 	BaseRecord struct {
 		Timestamp string `json:"timestamp"`
 		Level     string `json:"logLevel"`
@@ -52,7 +56,7 @@ type (
 var (
 	LogsPath string
 
-	elasticsearchClient *elasticsearch.Client
+	elasticsearchClient elasticsearchConnection
 
 	fileMutex sync.Mutex
 )
@@ -63,17 +67,17 @@ func Init(config ElasticSearchConfig) error {
 			fmt.Sprintf("%s://%s:%d", config.Protocol, config.Host, config.Port),
 		},
 	}
-	client, err := elasticsearch.NewClient(cfg)
+	cl, err := elasticsearch.NewClient(cfg)
 	if err != nil {
 		return err
 	}
 
-	_, err = client.Ping()
+	_, err = cl.Ping()
 	if err != nil {
 		return err
 	}
 
-	elasticsearchClient = client
+	elasticsearchClient.Conn = cl
 
 	return nil
 }
@@ -83,7 +87,7 @@ func writeLog(content []byte) {
 		Body: bytes.NewReader(content)}
 	ctx, cancel := context.WithTimeout(context.Background(), time.Second*5)
 	defer cancel()
-	r, err := rq.Do(ctx, elasticsearchClient)
+	r, err := rq.Do(ctx, elasticsearchClient.Conn)
 	if err != nil {
 		log.Printf("FAILED TO WRITE LOG: %s", err.Error())
 	} else {
