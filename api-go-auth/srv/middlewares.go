@@ -16,12 +16,12 @@ type (
 	Middleware func(Handler) Handler
 )
 
-func WithMiddlewares(h Handler, mds ...Middleware) Handler {
+func WithMiddlewares(h Handler, mds ...Middleware) fasthttp.RequestHandler {
 	handler := h
 	for i := range mds {
 		handler = mds[i](handler)
 	}
-	return handler
+	return fasthttp.RequestHandler(handler)
 }
 
 func Authorize(h Handler) Handler {
