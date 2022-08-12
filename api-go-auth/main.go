@@ -18,7 +18,7 @@ const (
 	V1 = "/v1"
 )
 
-//TODO graceful shutdown, redis cache, line 32 refactor
+//TODO graceful shutdown, redis cache, line 32 refactor, cover tests
 
 func init() {
 	config, err := ReadConfig("config.json")
