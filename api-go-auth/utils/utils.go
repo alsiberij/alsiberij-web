@@ -7,18 +7,31 @@ import (
 	"unsafe"
 )
 
-//TODO wrap r with mutex
-
 var (
-	R      = rand.New(rand.NewSource(time.Now().Unix()))
+	R = syncedRandom{
+		rand: rand.New(rand.NewSource(time.Now().Unix())),
+		mx:   sync.Mutex{},
+	}
 	rMutex sync.Mutex
 )
 
 type (
+	syncedRandom struct {
+		rand *rand.Rand
+		mx   sync.Mutex
+	}
+
 	Searchable interface {
 		string
 	}
 )
+
+func (s *syncedRandom) Int() int {
+	s.mx.Lock()
+	defer s.mx.Unlock()
+
+	return s.rand.Int()
+}
 
 func GenerateString(length uint, alphabet string) string {
 	result := make([]byte, length)
