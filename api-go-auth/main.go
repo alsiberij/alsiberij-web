@@ -5,20 +5,22 @@ import (
 	"auth/logger"
 	"auth/repository"
 	"auth/srv"
+	"context"
 	"crypto/tls"
 	"github.com/fasthttp/router"
 	"github.com/valyala/fasthttp"
 	"log"
 	"net"
 	"os"
-	"time"
+	"os/signal"
+	"syscall"
 )
 
 const (
 	V1 = "/v1"
 )
 
-//TODO graceful shutdown, redis cache, line 32 refactor, cover tests
+//TODO redis cache, tests
 
 func init() {
 	config, err := ReadConfig("config.json")
@@ -73,7 +75,7 @@ func main() {
 	if portSec == "" {
 		portSec = "11400"
 	}
-	log.Printf("LISTENING SECURE %s PORT\n", portSec)
+	log.Printf("LISTENING %s PORT\n", portSec)
 
 	sslPath := os.Getenv("SSL_PATH")
 	if sslPath == "" {
@@ -85,30 +87,53 @@ func main() {
 		log.Fatalf("SSL ERROR: %s", err.Error())
 	}
 
-	lisSec, err := tls.Listen("tcp4", ":"+portSec, &tls.Config{Certificates: []tls.Certificate{cert}})
+	lis, err := tls.Listen("tcp4", ":"+portSec, &tls.Config{Certificates: []tls.Certificate{cert}})
 	if err != nil {
-		log.Fatalf("SECURE LISTENER ERROR: %s", err.Error())
+		log.Fatalf("LISTENER ERROR: %s", err.Error())
 	}
 
-	serverSecure := fasthttp.Server{
+	server := fasthttp.Server{
 		Name:         "API-GO-AUTH",
 		Handler:      srv.LogMiddleware(r.Handler),
 		LogAllErrors: true,
 	}
 
-	errorsStream := make(chan error)
-
-	go Serve(&serverSecure, lisSec, errorsStream)
-
-	for {
-		log.Println(<-errorsStream)
-	}
+	GracefulServe(&server, lis)
 }
 
-func Serve(server *fasthttp.Server, listener net.Listener, errChan chan error) {
-	for {
-		err := server.Serve(listener)
-		errChan <- err
-		time.Sleep(5 * time.Second)
+func GracefulServe(server *fasthttp.Server, listener net.Listener) {
+	sigChan := make(chan os.Signal)
+	signal.Notify(sigChan, syscall.SIGINT, syscall.SIGTERM, syscall.SIGKILL)
+
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+
+	go Serve(server, listener, cancel)
+
+	var err error
+
+	select {
+	case <-ctx.Done():
+		log.Println("SERVER STOPPED")
+	case <-sigChan:
+		log.Println("SHUTTING DOWN...")
 	}
+
+	err = server.Shutdown()
+
+	if err != nil {
+		log.Printf("SHUT DOWN ERROR: %v\n", err)
+	} else {
+		log.Println("SHUT DOWN OK")
+	}
+
+	return
+}
+
+func Serve(server *fasthttp.Server, listener net.Listener, cancel context.CancelFunc) {
+	err := server.Serve(listener)
+	if err != nil {
+		log.Printf("SERVER ERROR: %v\n", err)
+	}
+	cancel()
 }
