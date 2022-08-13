@@ -23,9 +23,11 @@ const (
 	V1 = "/v1"
 )
 
-//TODO redis cache,
-//TODO tests,
-//TODO optimize logging (file write), base64encodeToString, headers visiting
+//TODO redis cache
+
+//TODO tests
+
+//TODO base64encodeToString, headers visiting (memory)
 
 func init() {
 	config, err := ReadConfig("config.json")
