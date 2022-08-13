@@ -9,6 +9,7 @@ import (
 	"crypto/tls"
 	"github.com/fasthttp/router"
 	"github.com/valyala/fasthttp"
+	"github.com/valyala/fasthttp/pprofhandler"
 	"log"
 	"net"
 	"os"
@@ -20,7 +21,9 @@ const (
 	V1 = "/v1"
 )
 
-//TODO redis cache, tests
+//TODO redis cache,
+//TODO tests,
+//TODO optimize logging (file write), base64encodeToString, headers visiting
 
 func init() {
 	config, err := ReadConfig("config.json")
@@ -70,6 +73,10 @@ func main() {
 
 	r.PATCH(V1+"/user/{id}/status", srv.WithMiddlewares(srv.ChangeUserStatus,
 		srv.AuthorizeRoles([]string{jwt.RoleCreator, jwt.RoleAdmin, jwt.RoleModerator})))
+
+	//TODO REMOVE DEBUG
+	r.GET("/debug/pprof/profile", pprofhandler.PprofHandler)
+	r.GET("/debug/pprof/heap", pprofhandler.PprofHandler)
 
 	portSec := os.Getenv("PORT")
 	if portSec == "" {

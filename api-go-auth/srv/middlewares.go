@@ -16,6 +16,8 @@ type (
 	Middleware func(handler fasthttp.RequestHandler) fasthttp.RequestHandler
 )
 
+//TODO strings cut in authorization
+
 func WithMiddlewares(h fasthttp.RequestHandler, mds ...Middleware) fasthttp.RequestHandler {
 	handler := h
 	for i := range mds {
