@@ -1,6 +1,7 @@
 package srv
 
 import (
+	"auth/jwt"
 	"auth/models"
 	"fmt"
 	"regexp"
@@ -47,6 +48,10 @@ type (
 
 	ChangeUserStatusRequest struct {
 		IsBanned bool `json:"isBanned"`
+	}
+
+	ValidateJwtResponse struct {
+		JwtClaims jwt.Claims `json:"jwtClaims"`
 	}
 )
 

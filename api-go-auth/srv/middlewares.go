@@ -5,6 +5,7 @@ import (
 	"auth/logging"
 	"auth/utils"
 	"github.com/valyala/fasthttp"
+	"strings"
 	"time"
 )
 
@@ -16,25 +17,23 @@ type (
 	Middleware func(handler fasthttp.RequestHandler) fasthttp.RequestHandler
 )
 
-//TODO strings cut in authorization
-
 func WithMiddlewares(h fasthttp.RequestHandler, mds ...Middleware) fasthttp.RequestHandler {
 	handler := h
 	for i := range mds {
 		handler = mds[i](handler)
 	}
-	return fasthttp.RequestHandler(handler)
+	return handler
 }
 
 func Authorize(h fasthttp.RequestHandler) fasthttp.RequestHandler {
 	return func(ctx *fasthttp.RequestCtx) {
 		authorization := string(ctx.Request.Header.Peek("Authorization"))
-		if len(authorization) < 7 {
+		_, bearerToken, ok := strings.Cut(authorization, "Bearer ")
+		if !ok {
 			Set401(ctx)
 			return
 		}
 
-		bearerToken := authorization[7:]
 		_, claims, err := jwt.Parse(bearerToken)
 		if err != nil {
 			Set401(ctx)
@@ -50,12 +49,12 @@ func AuthorizeRoles(roles []string) Middleware {
 	return func(h fasthttp.RequestHandler) fasthttp.RequestHandler {
 		return func(ctx *fasthttp.RequestCtx) {
 			authorization := string(ctx.Request.Header.Peek("Authorization"))
-			if len(authorization) < 7 {
+			_, bearerToken, ok := strings.Cut(authorization, "Bearer ")
+			if !ok {
 				Set401(ctx)
 				return
 			}
 
-			bearerToken := authorization[7:]
 			_, claims, err := jwt.Parse(bearerToken)
 			if err != nil {
 				Set401(ctx)

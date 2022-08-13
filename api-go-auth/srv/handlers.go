@@ -285,11 +285,7 @@ func ValidateJWT(ctx *fasthttp.RequestCtx) {
 		return
 	}
 
-	_ = json.NewEncoder(ctx).Encode(struct {
-		Status    bool       `json:"status"`
-		JwtClaims jwt.Claims `json:"jwtClaims"`
-	}{
-		Status:    true,
+	_ = json.NewEncoder(ctx).Encode(ValidateJwtResponse{
 		JwtClaims: claims,
 	})
 	ctx.SetContentType("application/json")
