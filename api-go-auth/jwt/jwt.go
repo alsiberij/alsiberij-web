@@ -12,7 +12,7 @@ import (
 )
 
 const (
-	JwtLifetime = 3600
+	TokenLifetime = 3600
 
 	RoleCreator        = "CREATOR"
 	RoleAdmin          = "ADMIN"
@@ -58,7 +58,7 @@ func Create(userId int64, role string) (string, int64, int64) {
 	claims := Claims{
 		Sub: userId,
 		Rol: role,
-		Exp: issueTime + JwtLifetime,
+		Exp: issueTime + TokenLifetime,
 		Iat: issueTime,
 	}
 
@@ -77,7 +77,7 @@ func Create(userId int64, role string) (string, int64, int64) {
 	signature := base64enc.EncodeToString(h.Sum(nil))
 
 	return headerString + "." + claimsString + "." + signature,
-		issueTime + JwtLifetime,
+		issueTime + TokenLifetime,
 		issueTime
 }
 
