@@ -2,7 +2,7 @@ package srv
 
 import (
 	"auth/jwt"
-	"auth/logger"
+	"auth/logging"
 	"auth/utils"
 	"github.com/valyala/fasthttp"
 	"time"
@@ -75,7 +75,7 @@ func AuthorizeRoles(roles []string) Middleware {
 
 func LogMiddleware(h fasthttp.RequestHandler) fasthttp.RequestHandler {
 	return func(ctx *fasthttp.RequestCtx) {
-		req := logger.Request{
+		req := logging.Request{
 			Timestamp: time.Now().Unix(),
 			Method:    utils.BytesToString(ctx.Request.Header.Method()),
 			Path:      utils.BytesToString(ctx.Path()),
@@ -93,7 +93,7 @@ func LogMiddleware(h fasthttp.RequestHandler) fasthttp.RequestHandler {
 		h(ctx)
 		t2 := time.Now()
 
-		res := logger.Response{
+		res := logging.Response{
 			Timestamp:     time.Now().Unix(),
 			Protocol:      utils.BytesToString(ctx.Response.Header.Protocol()),
 			StatusCode:    ctx.Response.StatusCode(),
@@ -106,6 +106,6 @@ func LogMiddleware(h fasthttp.RequestHandler) fasthttp.RequestHandler {
 				utils.BytesToString(append(append(key, []byte{':', ' '}...), value...)))
 		})
 
-		go logger.LogServerRequest(req, res)
+		go Logger.WriteServerRequest(req, res)
 	}
 }

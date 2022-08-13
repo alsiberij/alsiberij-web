@@ -1,8 +1,9 @@
 package srv
 
 import (
-	"auth/logger"
+	"auth/logging"
 	"encoding/json"
+	"errors"
 	"github.com/valyala/fasthttp"
 	"runtime/debug"
 )
@@ -133,7 +134,7 @@ func Set500Error(ctx *fasthttp.RequestCtx, err error) {
 	devMsg := "ERROR : "
 	if err != nil {
 		devMsg += err.Error()
-		go logger.LogError(err, logger.LevelError)
+		go Logger.WriteError(err, logging.LevelError)
 	} else {
 		devMsg += "empty error"
 	}
@@ -166,7 +167,7 @@ func Set500Panic(ctx *fasthttp.RequestCtx, i interface{}) {
 
 	devMsg += string(debug.Stack())
 
-	go logger.LogMessage(devMsg, logger.LevelFatal)
+	go Logger.WriteError(errors.New(devMsg), logging.LevelFatal)
 
 	_ = json.NewEncoder(ctx).Encode(HttpError{
 		HttpCode: fasthttp.StatusInternalServerError,

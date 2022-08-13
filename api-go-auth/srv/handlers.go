@@ -26,10 +26,6 @@ type (
 	}
 )
 
-var (
-	PostgresAuth repository.Postgres
-)
-
 func Test(ctx *fasthttp.RequestCtx) {
 	_ = json.NewEncoder(ctx).Encode(&TestStruct{Status: true})
 	ctx.SetContentType("application/json")
