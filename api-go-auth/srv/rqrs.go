@@ -59,7 +59,7 @@ var (
 	ValidLogin    = regexp.MustCompile("^[a-z]{6,32}$").MatchString
 	ValidPassword = regexp.MustCompile("^[\\w!@#$%^&*\\-+=]{6,32}$").MatchString
 	ValidRefresh  = regexp.MustCompile(fmt.Sprintf("^[%s]+$", RefreshTokenAlphabet)).MatchString
-	ValidEmail    = regexp.MustCompile("^[a-z][a-z0-9-_.]{2,}@[a-z][a-z\\d-]+\\.[a-z][a-z\\d]+$").MatchString
+	ValidEmail    = regexp.MustCompile("^[a-z][a-z\\d-_.]{2,}@[a-z][a-z\\d-]+\\.[a-z][a-z\\d]+$").MatchString
 )
 
 func (r *LoginRequest) Validate() (bool, UserMessage) {
