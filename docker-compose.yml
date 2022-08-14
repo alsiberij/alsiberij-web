@@ -6,7 +6,7 @@ services:
   nginx:
     build:
       context: nginx
-      dockerfile: Dockerfile
+      dockerfile: nginx/Dockerfile-NGINX
     container_name: ngx
     ports:
       - "80:80"
@@ -18,7 +18,7 @@ services:
   postgres:
     build:
       context: postgres
-      dockerfile: Dockerfile
+      dockerfile: postgres/Dockerfile-POSTGRES
     container_name: pgs
     volumes:
       - ./postgres/data:/var/lib/postgresql/data
@@ -26,7 +26,7 @@ services:
   migrate:
     build:
       context: migrate
-      dockerfile: Dockerfile
+      dockerfile: migrate/Dockerfile-MIGRATE
     container_name: mgt
 
   #SERVICES
@@ -34,7 +34,7 @@ services:
   api-go-auth:
     build:
       context: api-go-auth
-      dockerfile: Dockerfile
+      dockerfile: api-go-auth/Dockerfile-API-GO-AUTH
     container_name: api-go-auth
     volumes:
       - ./api-go-auth/logger/logs:/logs
@@ -47,5 +47,5 @@ services:
   web-php-main:
     build:
       context: web-php-main
-      dockerfile: Dockerfile
+      dockerfile: web-php-main/Dockerfile-WEB-MAIN-PHP
     container_name: web-php-main

@@ -1,10 +1,10 @@
 FROM golang:1.18
 
-COPY migrations /migrations/
+COPY ./migrate/migrations /migrations/
 
 RUN go install -tags 'postgres' github.com/golang-migrate/migrate/v4/cmd/migrate@latest
 
-COPY start.sh /start.sh
+COPY ./migrate/start.sh /start.sh
 RUN chmod +x /start.sh
 
 ENTRYPOINT ["/start.sh"]

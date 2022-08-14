@@ -2,7 +2,7 @@ FROM php:8.1-fpm
 
 WORKDIR /prj
 
-COPY  . .
+COPY ./web-php-main .
 
 ENV PORT 9000
 EXPOSE $PORT
