@@ -134,7 +134,7 @@ func Set500Error(ctx *fasthttp.RequestCtx, err error) {
 	devMsg := "ERROR : "
 	if err != nil {
 		devMsg += err.Error()
-		go Logger.WriteError(err, logging.LevelError)
+		go Logger.LogError(err, logging.LevelError)
 	} else {
 		devMsg += "empty error"
 	}
@@ -167,7 +167,7 @@ func Set500Panic(ctx *fasthttp.RequestCtx, i interface{}) {
 
 	devMsg += string(debug.Stack())
 
-	go Logger.WriteError(errors.New(devMsg), logging.LevelFatal)
+	go Logger.LogError(errors.New(devMsg), logging.LevelFatal)
 
 	_ = json.NewEncoder(ctx).Encode(HttpError{
 		HttpCode: fasthttp.StatusInternalServerError,

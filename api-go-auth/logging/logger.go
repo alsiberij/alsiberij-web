@@ -165,6 +165,8 @@ func (l *Logger) Save() error {
 }
 
 func (l *Logger) WriteServerRequest(req Request, res Response) {
+	//TODO Hash bodies
+
 	//requestBodyHash := md5.Sum([]byte(req.Body))
 	//req.Body = hex.EncodeToString(requestBodyHash[:])
 
@@ -188,22 +190,18 @@ func (l *Logger) WriteServerRequest(req Request, res Response) {
 	}
 }
 
-func (l *Logger) WriteError(err error, level logLevel) {
+func (l *Logger) LogError(err error, level logLevel) {
 	if err == nil {
 		return
 	}
 
-	l.writeMessage(err.Error(), level)
-}
-
-func (l *Logger) writeMessage(message string, level logLevel) {
-	err := l.encodeAndWrite(&ErrorsRecord{
+	err = l.encodeAndWrite(&ErrorsRecord{
 		BaseRecord: BaseRecord{
 			Timestamp: time.Now().Format(l.timeFormat),
 			Level:     string(level),
 			Type:      LogTypeError,
 		},
-		Content: message,
+		Content: err.Error(),
 	})
 
 	if err != nil {
