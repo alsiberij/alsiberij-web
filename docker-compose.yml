@@ -21,7 +21,7 @@ services:
       dockerfile: Dockerfile-POSTGRES
     container_name: pgs
     volumes:
-      - ./postgres/data:/var/lib/postgresql/data
+      - ./postgres1/data:/var/lib/postgresql/data
 
   migrate:
     build:
