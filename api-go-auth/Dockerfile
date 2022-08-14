@@ -14,7 +14,7 @@ COPY --from=builder /app/app /bin/app
 
 COPY config.example.json /config.json
 
-COPY ssl /bin/ssl
+COPY ./../ssl /bin/ssl
 ENV SSL_PATH "/bin/ssl"
 
 ENV LOGS_PATH "/logs"

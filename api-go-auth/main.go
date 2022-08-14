@@ -89,7 +89,7 @@ func main() {
 
 	sslPath := os.Getenv("SSL_PATH")
 	if sslPath == "" {
-		sslPath = "./ssl"
+		sslPath = "./../ssl"
 	}
 
 	cert, err := tls.LoadX509KeyPair(sslPath+"/fullchain.pem", sslPath+"/privkey.pem")
