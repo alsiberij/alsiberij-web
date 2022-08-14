@@ -1,8 +1,8 @@
 package srv
 
 import (
+	"auth/database"
 	"auth/jwt"
-	"auth/repository"
 	"auth/utils"
 	"encoding/json"
 	"github.com/valyala/fasthttp"
@@ -209,7 +209,7 @@ func CheckEmail(ctx *fasthttp.RequestCtx) {
 	code := 111111
 	//TODO SEND EMAIL
 
-	repository.EmailCache.Save(request.Email, code)
+	database.EmailCache.Save(request.Email, code)
 }
 
 func Register(ctx *fasthttp.RequestCtx) {
@@ -226,7 +226,7 @@ func Register(ctx *fasthttp.RequestCtx) {
 		return
 	}
 
-	code, ok := repository.EmailCache.Search(request.Email)
+	code, ok := database.EmailCache.Search(request.Email)
 	if !(ok && code == request.Code) {
 		Set400(ctx, InvalidCodeUserMessage)
 		return

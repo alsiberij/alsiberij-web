@@ -1,9 +1,9 @@
 package main
 
 import (
+	"auth/database"
 	"auth/jwt"
 	"auth/logging"
-	"auth/repository"
 	"auth/srv"
 	"context"
 	"crypto/tls"
@@ -33,7 +33,7 @@ func init() {
 		log.Fatal(err)
 	}
 
-	pgs, err := repository.NewPostgres(config.AuthPGS)
+	pgs, err := database.NewPostgres(config.AuthPGS)
 	if err != nil {
 		log.Fatalf("UNABLE CONNECT TO POSTGRES: %s", err.Error())
 	}
@@ -46,7 +46,7 @@ func init() {
 	srv.Logger = logging.NewLogger(logsPath+"/logs-%s.log",
 		os.O_CREATE|os.O_WRONLY|os.O_APPEND, 0666, "2006-01-02T15:04:05")
 
-	go repository.EmailCache.GC()
+	go database.EmailCache.GC()
 }
 
 func main() {

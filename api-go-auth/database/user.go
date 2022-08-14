@@ -1,4 +1,4 @@
-package repository
+package database
 
 import (
 	"auth/models"
@@ -13,6 +13,10 @@ type (
 		conn pgxtype.Querier
 	}
 )
+
+func NewUsers(conn pgxtype.Querier) Users {
+	return Users{conn: conn}
+}
 
 func (r *Users) Create(email, login, password string) error {
 	h := sha512.New()

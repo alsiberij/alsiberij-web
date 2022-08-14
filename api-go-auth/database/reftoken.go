@@ -1,4 +1,4 @@
-package repository
+package database
 
 import (
 	"auth/models"
@@ -11,6 +11,10 @@ type (
 		conn pgxtype.Querier
 	}
 )
+
+func NewRefreshTokens(conn pgxtype.Querier) RefreshTokens {
+	return RefreshTokens{conn: conn}
+}
 
 func (r *RefreshTokens) Create(userId int64, token string) error {
 	_, err := r.conn.Exec(context.Background(), `INSERT INTO refresh_tokens("userId", token) VALUES ($1, $2)`,

@@ -1,4 +1,4 @@
-package repository
+package database
 
 import (
 	"context"
@@ -54,9 +54,9 @@ func (r *Postgres) AcquireConnection() (*pgxpool.Conn, error) {
 }
 
 func (r *Postgres) Users(q pgxtype.Querier) Users {
-	return Users{conn: q}
+	return NewUsers(q)
 }
 
 func (r *Postgres) RefreshTokens(q pgxtype.Querier) RefreshTokens {
-	return RefreshTokens{conn: q}
+	return NewRefreshTokens(q)
 }

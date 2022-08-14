@@ -1,14 +1,14 @@
 package main
 
 import (
-	"auth/repository"
+	"auth/database"
 	"encoding/json"
 	"os"
 )
 
 type (
 	Config struct {
-		AuthPGS repository.PostgresConfig `json:"authPGS"`
+		AuthPGS database.PostgresConfig `json:"authPGS"`
 	}
 )
 
@@ -17,13 +17,9 @@ func ReadConfig(filename string) (Config, error) {
 	if err != nil {
 		return Config{}, err
 	}
-	defer f.Close()
 
 	var config Config
 	err = json.NewDecoder(f).Decode(&config)
-	if err != nil {
-		return Config{}, err
-	}
-
-	return config, nil
+	_ = f.Close()
+	return config, err
 }

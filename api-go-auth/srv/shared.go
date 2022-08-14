@@ -1,11 +1,11 @@
 package srv
 
 import (
+	"auth/database"
 	"auth/logging"
-	"auth/repository"
 )
 
 var (
-	PostgresAuth repository.Postgres
+	PostgresAuth database.Postgres
 	Logger       logging.Logger
 )
