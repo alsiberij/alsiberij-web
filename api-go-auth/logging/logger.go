@@ -3,6 +3,7 @@ package logging
 import (
 	"encoding/json"
 	"errors"
+	"fmt"
 	"io"
 	"log"
 	"os"
@@ -11,7 +12,7 @@ import (
 )
 
 const (
-	logBufferSize = 2_000_000
+	logBufferSize = 1_000_000
 
 	LevelFatal logLevel = "FATAL"
 	LevelError logLevel = "ERROR"
@@ -36,6 +37,8 @@ type (
 		fileFlags int
 		filePerms os.FileMode
 		fileMx    *sync.Mutex
+
+		currentDate string
 	}
 
 	logLevel string
@@ -84,34 +87,35 @@ var (
 
 func NewLogger(filepath string, fileFlags int, filePerms os.FileMode, timeFormat string) Logger {
 	return Logger{
-		timeFormat: timeFormat,
-		buffer:     [logBufferSize]byte{},
-		actualSize: 0,
-		bufMx:      &sync.RWMutex{},
-		filepath:   filepath,
-		fileFlags:  fileFlags,
-		filePerms:  filePerms,
-		fileMx:     &sync.Mutex{},
+		timeFormat:  timeFormat,
+		buffer:      [logBufferSize]byte{},
+		actualSize:  0,
+		bufMx:       &sync.RWMutex{},
+		filepath:    filepath,
+		fileFlags:   fileFlags,
+		filePerms:   filePerms,
+		fileMx:      &sync.Mutex{},
+		currentDate: time.Now().Format("2006-01-02"),
 	}
 }
 
 func (l *Logger) write(data []byte) error {
-	l.bufMx.Lock()
-	defer l.bufMx.Unlock()
-
 	dataLen := len(data)
+	actualDate := time.Now().Format("2006-01-02")
 
-	if logBufferSize-l.actualSize < dataLen {
-		l.bufMx.Unlock()
-		err := l.Save()
-		l.bufMx.Lock()
+	if actualDate != l.currentDate || logBufferSize-l.actualSize < dataLen {
+		err := l.save(l.currentDate)
 		if err != nil {
 			return err
 		}
 		if logBufferSize-l.actualSize < dataLen {
 			return errNoSpace
 		}
+		l.currentDate = actualDate
 	}
+
+	l.bufMx.Lock()
+	defer l.bufMx.Unlock()
 
 	for i := 0; i < dataLen; i++ {
 		l.buffer[l.actualSize+i] = data[i]
@@ -143,17 +147,21 @@ func (l *Logger) encodeAndWrite(data interface{}) error {
 	return l.write(content)
 }
 
-func (l *Logger) Save() error {
+func (l *Logger) save(date string) error {
 	l.fileMx.Lock()
 	defer l.fileMx.Unlock()
 
-	f, err := os.OpenFile(l.filepath, l.fileFlags, l.filePerms)
+	f, err := os.OpenFile(fmt.Sprintf(l.filepath, date), l.fileFlags, l.filePerms)
 	if err != nil {
 		return err
 	}
 	err = l.move(f)
 	_ = f.Close()
 	return err
+}
+
+func (l *Logger) Save() error {
+	return l.save(time.Now().Format("2006-01-02"))
 }
 
 func (l *Logger) WriteServerRequest(req Request, res Response) {

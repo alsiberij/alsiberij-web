@@ -7,7 +7,6 @@ import (
 	"auth/srv"
 	"context"
 	"crypto/tls"
-	"fmt"
 	"github.com/fasthttp/router"
 	"github.com/valyala/fasthttp"
 	"github.com/valyala/fasthttp/pprofhandler"
@@ -16,7 +15,6 @@ import (
 	"os"
 	"os/signal"
 	"syscall"
-	"time"
 )
 
 const (
@@ -45,7 +43,7 @@ func init() {
 	if logsPath == "" {
 		logsPath = "./logging/logs"
 	}
-	srv.Logger = logging.NewLogger(fmt.Sprintf(logsPath+"/logs-%s.log", time.Now().Format("2006-01-02")),
+	srv.Logger = logging.NewLogger(logsPath+"/logs-%s.log",
 		os.O_CREATE|os.O_WRONLY|os.O_APPEND, 0666, "2006-01-02T15:04:05")
 
 	go repository.EmailCache.GC()
@@ -132,6 +130,10 @@ func GracefulServe(server *fasthttp.Server, listener net.Listener) {
 	}
 
 	err = server.Shutdown()
+	if err != nil {
+		log.Printf("ERROR SAVING LOG BUFFER: %v", err)
+	}
+
 	err = srv.Logger.Save()
 	if err != nil {
 		log.Printf("ERROR SAVING LOG BUFFER: %v", err)
