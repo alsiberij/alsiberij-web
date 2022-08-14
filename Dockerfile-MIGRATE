@@ -7,7 +7,8 @@ RUN go install -tags 'postgres' github.com/golang-migrate/migrate/v4/cmd/migrate
 COPY ./migrate/start.sh /start.sh
 RUN chmod +x /start.sh
 
-ENTRYPOINT ["/start.sh"]
+ENV PG_AUTH_DB "als_db"
+ENV PG_AUTH_HOST "pgs-1"
+ENV PG_AUTH_PORT 5432
 
-ENV PG_AUTH_USER "als_auth"
-ENV PG_DB "als_db"
+ENTRYPOINT ["/start.sh"]

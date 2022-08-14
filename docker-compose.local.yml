@@ -15,13 +15,13 @@ services:
       - web-php-main
       - api-go-auth
 
-  postgres:
+  postgres-1:
     build:
       context: .
-      dockerfile: Dockerfile-POSTGRES
-    container_name: pgs
+      dockerfile: Dockerfile-POSTGRES-1
+    container_name: pgs-1
     volumes:
-      - ./postgres1/data:/var/lib/postgresql/data
+      - ./postgres-1/data:/var/lib/postgresql/data
     ports:
       - "5432:5432"
 
