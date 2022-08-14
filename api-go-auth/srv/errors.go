@@ -133,8 +133,8 @@ func Set405(ctx *fasthttp.RequestCtx) {
 func Set500Error(ctx *fasthttp.RequestCtx, err error) {
 	devMsg := "ERROR : "
 	if err != nil {
-		devMsg += err.Error()
 		go Logger.LogError(err, logging.LevelError)
+		devMsg += err.Error()
 	} else {
 		devMsg += "empty error"
 	}

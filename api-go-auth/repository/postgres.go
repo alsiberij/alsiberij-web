@@ -26,10 +26,10 @@ type (
 )
 
 var (
-	errPostgresNotInitialized = errors.New("postgres not initialized")
+	ErrPostgresNotInitialized = errors.New("postgres not initialized")
 )
 
-func New(config PostgresConfig) (Postgres, error) {
+func NewPostgres(config PostgresConfig) (Postgres, error) {
 	dsn := fmt.Sprintf("postgres://%s:%s@%s:%d/%s?sslmode=%s&pool_max_conns=%d",
 		config.User, config.Password, config.Host, config.Port, config.DbName, config.SslMode, config.MaxCons)
 
@@ -48,15 +48,15 @@ func New(config PostgresConfig) (Postgres, error) {
 
 func (r *Postgres) AcquireConnection() (*pgxpool.Conn, error) {
 	if !r.isActive {
-		return nil, errPostgresNotInitialized
+		return nil, ErrPostgresNotInitialized
 	}
 	return r.connPool.Acquire(context.Background())
 }
 
 func (r *Postgres) Users(q pgxtype.Querier) Users {
-	return &UsersPostgres{conn: q}
+	return Users{conn: q}
 }
 
 func (r *Postgres) RefreshTokens(q pgxtype.Querier) RefreshTokens {
-	return &RefreshTokensPostgres{conn: q}
+	return RefreshTokens{conn: q}
 }

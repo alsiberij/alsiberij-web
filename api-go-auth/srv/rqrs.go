@@ -9,8 +9,8 @@ import (
 )
 
 type (
-	Validatable interface {
-		Validate() (bool, UserMessage)
+	TestResponse struct {
+		Status bool `json:"status"`
 	}
 
 	LoginRequest struct {

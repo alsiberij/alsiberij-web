@@ -33,7 +33,7 @@ func init() {
 		log.Fatal(err)
 	}
 
-	pgs, err := repository.New(config.AuthPGS)
+	pgs, err := repository.NewPostgres(config.AuthPGS)
 	if err != nil {
 		log.Fatalf("UNABLE CONNECT TO POSTGRES: %s", err.Error())
 	}

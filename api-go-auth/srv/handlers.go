@@ -20,14 +20,8 @@ const (
 	RefreshTokenRevokeTypeAllExceptCurrent = "ALL_EXCEPT_CURRENT"
 )
 
-type (
-	TestStruct struct {
-		Status bool `json:"status"`
-	}
-)
-
 func Test(ctx *fasthttp.RequestCtx) {
-	_ = json.NewEncoder(ctx).Encode(&TestStruct{Status: true})
+	_ = json.NewEncoder(ctx).Encode(TestResponse{Status: true})
 	ctx.SetContentType("application/json")
 }
 
@@ -78,11 +72,9 @@ func Login(ctx *fasthttp.RequestCtx) {
 		return
 	}
 
-	response := LoginResponse{
+	_ = json.NewEncoder(ctx).Encode(LoginResponse{
 		RefreshToken: refreshToken,
-	}
-
-	_ = json.NewEncoder(ctx).Encode(response)
+	})
 	ctx.SetContentType("application/json")
 }
 
@@ -120,7 +112,7 @@ func Refresh(ctx *fasthttp.RequestCtx) {
 	}
 
 	if time.Now().Sub(refreshToken.LastUsedAt) > RefreshTokenLifePeriod {
-		err = refTokenRep.SetExpired(refreshToken.Id)
+		_, err = refTokenRep.SetExpired(refreshToken.Id)
 		if err != nil {
 			Set500Error(ctx, err)
 		} else {
@@ -129,7 +121,7 @@ func Refresh(ctx *fasthttp.RequestCtx) {
 		return
 	}
 
-	err = refTokenRep.UpdateLastUsageTime(refreshToken.Token)
+	_, err = refTokenRep.UpdateLastUsageTime(refreshToken.Token)
 	if err != nil {
 		Set500Error(ctx, err)
 		return
@@ -183,11 +175,11 @@ func Revoke(ctx *fasthttp.RequestCtx) {
 
 	switch revokeType {
 	case RefreshTokenRevokeTypeCurrent:
-		err = refTokenRep.SetExpiredByToken(request.RefreshToken)
+		_, err = refTokenRep.SetExpiredByToken(request.RefreshToken)
 	case RefreshTokenRevokeTypeAll:
-		err = refTokenRep.SetExpiredByTokenBelongingUser(request.RefreshToken)
+		_, err = refTokenRep.SetExpiredByTokenBelongingUser(request.RefreshToken)
 	case RefreshTokenRevokeTypeAllExceptCurrent:
-		err = refTokenRep.SetExpiredByTokenBelongingUserExceptCurrent(request.RefreshToken)
+		_, err = refTokenRep.SetExpiredByTokenBelongingUserExceptCurrent(request.RefreshToken)
 	default:
 		Set400(ctx, InvalidRevokingRefreshTokenType)
 		return
@@ -368,19 +360,14 @@ func ChangeUserStatus(ctx *fasthttp.RequestCtx) {
 		return
 	}
 
-	err = userRep.ChangeStatus(user.Id, request.IsBanned)
+	_, err = userRep.ChangeStatus(user.Id, request.IsBanned)
 	if err != nil {
-		Set400(ctx, InvalidRequestBodyUserMessage)
+		Set500Error(ctx, err)
 		return
 	}
 
 	if request.IsBanned {
 		refTokenRep := PostgresAuth.RefreshTokens(conn)
-
-		err = refTokenRep.SetExpiredByUserId(user.Id)
-		if err != nil {
-			Set400(ctx, InvalidRequestBodyUserMessage)
-			return
-		}
+		_, _ = refTokenRep.SetExpiredByUserId(user.Id)
 	}
 }
