@@ -43,7 +43,7 @@ services:
     ports:
       - "11400:11400"
     depends_on:
-      - postgres
+      - postgres-1
 
   web-php-main:
     build:
