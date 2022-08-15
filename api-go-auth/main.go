@@ -81,11 +81,11 @@ func main() {
 	r.GET("/debug/pprof/profile", pprofhandler.PprofHandler)
 	r.GET("/debug/pprof/heap", pprofhandler.PprofHandler)
 
-	portSec := os.Getenv("PORT")
-	if portSec == "" {
-		portSec = "11400"
+	port := os.Getenv("PORT")
+	if port == "" {
+		port = "11400"
 	}
-	log.Printf("LISTENING %s PORT\n", portSec)
+	log.Printf("LISTENING %s PORT\n", port)
 
 	sslPath := os.Getenv("SSL_PATH")
 	if sslPath == "" {
@@ -97,7 +97,7 @@ func main() {
 		log.Fatalf("SSL ERROR: %s", err.Error())
 	}
 
-	lis, err := tls.Listen("tcp4", ":"+portSec, &tls.Config{Certificates: []tls.Certificate{cert}})
+	lis, err := tls.Listen("tcp4", ":"+port, &tls.Config{Certificates: []tls.Certificate{cert}})
 	if err != nil {
 		log.Fatalf("LISTENER ERROR: %s", err.Error())
 	}
