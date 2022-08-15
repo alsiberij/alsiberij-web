@@ -83,10 +83,7 @@ func LogMiddleware(h fasthttp.RequestHandler) fasthttp.RequestHandler {
 			Body:      utils.BytesToString(ctx.Request.Body()),
 		}
 
-		ctx.Request.Header.VisitAll(func(key, value []byte) {
-			req.Headers = append(req.Headers,
-				utils.BytesToString(append(append(key, []byte{':', ' '}...), value...)))
-		})
+		req.Headers = strings.Split(strings.ReplaceAll(ctx.Request.Header.String(), "\r", ""), "\n")[1:]
 
 		t1 := time.Now()
 		h(ctx)
@@ -100,10 +97,7 @@ func LogMiddleware(h fasthttp.RequestHandler) fasthttp.RequestHandler {
 			Body:          utils.BytesToString(ctx.Response.Body()),
 			ExecutionTime: t2.Sub(t1).Milliseconds(),
 		}
-		ctx.Response.Header.VisitAll(func(key, value []byte) {
-			res.Headers = append(res.Headers,
-				utils.BytesToString(append(append(key, []byte{':', ' '}...), value...)))
-		})
+		res.Headers = strings.Split(strings.ReplaceAll(ctx.Response.Header.String(), "\r", ""), "\n")[1:]
 
 		go Logger.WriteServerRequest(req, res)
 	}
