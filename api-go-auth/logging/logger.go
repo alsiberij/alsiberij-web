@@ -103,7 +103,7 @@ func (l *Logger) write(data []byte) error {
 	dataLen := len(data)
 	actualDate := time.Now().Format("2006-01-02")
 
-	if actualDate != l.currentDate || logBufferSize-l.actualSize < dataLen {
+	if actualDate != l.currentDate || logBufferSize-l.actualSize < dataLen+1 {
 		err := l.save(l.currentDate)
 		if err != nil {
 			return err
