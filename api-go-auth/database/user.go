@@ -33,7 +33,7 @@ func (r *Users) Create(email, login, password string) error {
 }
 
 func (r *Users) ById(id int64) (models.User, bool, error) {
-	row, err := r.conn.Query(context.Background(), `SELECT id, email, login, password, role, "createdAt", "isBanned" FROM users WHERE id = $1`,
+	row, err := r.conn.Query(context.Background(), `SELECT id, email, login, password, role, "createdAt" FROM users WHERE id = $1`,
 		id)
 	if err != nil {
 		return models.User{}, false, err
@@ -43,14 +43,14 @@ func (r *Users) ById(id int64) (models.User, bool, error) {
 	var exists bool
 	for row.Next() {
 		exists = true
-		err = row.Scan(&user.Id, &user.Email, &user.Login, &user.Password, &user.Role, &user.CreatedAt, &user.IsBanned)
+		err = row.Scan(&user.Id, &user.Email, &user.Login, &user.Password, &user.Role, &user.CreatedAt)
 	}
 
 	return user, exists, err
 }
 
 func (r *Users) AllShort() ([]models.UserShort, error) {
-	row, err := r.conn.Query(context.Background(), `SELECT id, email, login, role, "createdAt", "isBanned" FROM users ORDER BY id DESC`)
+	row, err := r.conn.Query(context.Background(), `SELECT id, email, login, role, "createdAt" FROM users ORDER BY id DESC`)
 	if err != nil {
 		return nil, err
 	}
@@ -58,7 +58,7 @@ func (r *Users) AllShort() ([]models.UserShort, error) {
 	var users []models.UserShort
 	for row.Next() {
 		var user models.UserShort
-		err = row.Scan(&user.Id, &user.Email, &user.Login, &user.Role, &user.CreatedAt, &user.IsBanned)
+		err = row.Scan(&user.Id, &user.Email, &user.Login, &user.Role, &user.CreatedAt)
 		if err != nil {
 			return nil, err
 		}
@@ -73,7 +73,7 @@ func (r *Users) ByCredentials(login, password string) (models.User, bool, error)
 	h.Write([]byte(password))
 	password = hex.EncodeToString(h.Sum(nil))
 
-	row, err := r.conn.Query(context.Background(), `SELECT id, email, login, password, role, "createdAt", "isBanned" FROM users WHERE login = $1 AND password = $2`,
+	row, err := r.conn.Query(context.Background(), `SELECT id, email, login, password, role, "createdAt" FROM users WHERE login = $1 AND password = $2`,
 		login, password)
 	if err != nil {
 		return models.User{}, false, err
@@ -83,7 +83,7 @@ func (r *Users) ByCredentials(login, password string) (models.User, bool, error)
 	var exists bool
 	for row.Next() {
 		exists = true
-		err = row.Scan(&user.Id, &user.Email, &user.Login, &user.Password, &user.Role, &user.CreatedAt, &user.IsBanned)
+		err = row.Scan(&user.Id, &user.Email, &user.Login, &user.Password, &user.Role, &user.CreatedAt)
 	}
 
 	return user, exists, err
