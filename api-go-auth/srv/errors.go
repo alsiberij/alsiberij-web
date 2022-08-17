@@ -55,7 +55,7 @@ var (
 		InternalCode: -8,
 	}
 	AccountIsBannedUserMessage = UserMessage{
-		Message:      "Ваш аккаунт заблокирован по причине '%s' пользователем #%d с %s по %s",
+		Message:      "Ваш аккаунт заблокирован по причине '%s' пользователем #%d с @%d@ по @%d@",
 		InternalCode: -9,
 	}
 	InvalidUserIdUserMessage = UserMessage{
@@ -73,10 +73,6 @@ var (
 	InvalidBanTimeMessage = UserMessage{
 		Message:      "Минимальное время блокировки 5 минут",
 		InternalCode: -13,
-	}
-	BanAlreadyExistsMessage = UserMessage{
-		Message:      "У пользователя уже есть активная блокировка",
-		InternalCode: -14,
 	}
 )
 

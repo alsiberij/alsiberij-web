@@ -31,11 +31,17 @@ func init() {
 		log.Fatal(err)
 	}
 
-	pgs, err := database.NewPostgres(config.AuthPGS)
+	pgs, err := database.NewPostgres(config.Pgs)
 	if err != nil {
-		log.Fatalf("UNABLE CONNECT TO POSTGRES: %s", err.Error())
+		log.Fatalf("UNABLE CONNECT TO POSTGRES: %v", err)
 	}
 	srv.PostgresAuth = pgs
+
+	rds, err := database.NewRedis(config.Rds)
+	if err != nil {
+		log.Fatalf("UNABLE CONNECT TO REDIS: %v", err)
+	}
+	srv.Redis = rds
 
 	logsPath := os.Getenv("LOGS_PATH")
 	if logsPath == "" {

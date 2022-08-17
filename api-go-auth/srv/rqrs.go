@@ -2,7 +2,6 @@ package srv
 
 import (
 	"auth/jwt"
-	"fmt"
 	"regexp"
 	"strings"
 	"time"
@@ -42,8 +41,8 @@ type (
 	}
 
 	BanRequest struct {
-		Reason      string `json:"reason"`
-		ActiveUntil int64  `json:"activeUntil"`
+		Reason string `json:"reason"`
+		Until  int64  `json:"until"`
 	}
 
 	ValidateJwtResponse struct {
@@ -54,7 +53,7 @@ type (
 var (
 	ValidLogin    = regexp.MustCompile("^[a-z]{6,32}$").MatchString
 	ValidPassword = regexp.MustCompile("^[\\w!@#$%^&*\\-+=]{6,32}$").MatchString
-	ValidRefresh  = regexp.MustCompile(fmt.Sprintf("^[%s]+$", RefreshTokenAlphabet)).MatchString
+	ValidRefresh  = regexp.MustCompile(RefreshTokenAlphabetRegexp).MatchString
 	ValidEmail    = regexp.MustCompile("^[a-z][a-z\\d-_.]{2,}@[a-z][a-z\\d-]+\\.[a-z][a-z\\d]+$").MatchString
 )
 
@@ -115,7 +114,7 @@ func (r *BanRequest) Validate() (bool, UserMessage) {
 		return false, InvalidBanReasonMessage
 	}
 
-	if time.Unix(r.ActiveUntil, 0).Before(time.Now().Add(time.Minute * 5)) {
+	if time.Unix(r.Until, 0).Before(time.Now().Add(time.Minute * 5)) {
 		return false, InvalidBanTimeMessage
 	}
 

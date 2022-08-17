@@ -8,7 +8,8 @@ import (
 
 type (
 	Config struct {
-		AuthPGS database.PostgresConfig `json:"authPGS"`
+		Pgs database.PostgresConfig `json:"pgs-1"`
+		Rds database.RedisConfig    `json:"rds-1"`
 	}
 )
 

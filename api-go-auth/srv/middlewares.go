@@ -41,32 +41,20 @@ func Authorize(h fasthttp.RequestHandler) fasthttp.RequestHandler {
 			return
 		}
 
-		conn, err := PostgresAuth.AcquireConnection()
-		if err != nil {
-			Set500Error(ctx, err)
-			return
-		}
+		bans := Redis.Bans()
 
-		bans := PostgresAuth.Bans(conn)
-
-		ban, exists, err := bans.ActiveByUserId(claims.Sub)
+		ban, exists, err := bans.ByUserId(claims.Sub)
 		if err != nil {
-			conn.Release()
 			Set500Error(ctx, err)
 			return
 		}
 		if exists {
-			conn.Release()
 			userMsg := AccountIsBannedUserMessage
 			userMsg.Message = fmt.Sprintf(
-				userMsg.Message, ban.Reason, ban.CreatedByUserId,
-				ban.CreatedAt.Format("15:04 2006-01-02"),
-				ban.ActiveUntil.Format("15:04 2006-01-02"))
+				userMsg.Message, ban.Reason, ban.ByUserId, ban.At, ban.Until)
 			Set403WithUserMessage(ctx, userMsg)
 			return
 		}
-
-		conn.Release()
 
 		ctx.SetUserValue(JwtContext, claims)
 		h(ctx)
@@ -94,32 +82,20 @@ func AuthorizeRoles(roles []string) Middleware {
 				return
 			}
 
-			conn, err := PostgresAuth.AcquireConnection()
-			if err != nil {
-				Set500Error(ctx, err)
-				return
-			}
+			bans := Redis.Bans()
 
-			bans := PostgresAuth.Bans(conn)
-
-			ban, exists, err := bans.ActiveByUserId(claims.Sub)
+			ban, exists, err := bans.ByUserId(claims.Sub)
 			if err != nil {
-				conn.Release()
 				Set500Error(ctx, err)
 				return
 			}
 			if exists {
-				conn.Release()
 				userMsg := AccountIsBannedUserMessage
 				userMsg.Message = fmt.Sprintf(
-					userMsg.Message, ban.Reason, ban.CreatedByUserId,
-					ban.CreatedAt.Format("15:04 2006-01-02"),
-					ban.ActiveUntil.Format("15:04 2006-01-02"))
+					userMsg.Message, ban.Reason, ban.ByUserId, ban.At, ban.Until)
 				Set403WithUserMessage(ctx, userMsg)
 				return
 			}
-
-			conn.Release()
 
 			ctx.SetUserValue(JwtContext, claims)
 			h(ctx)

@@ -12,7 +12,6 @@ var (
 		rand: rand.New(rand.NewSource(time.Now().Unix())),
 		mx:   sync.Mutex{},
 	}
-	rMutex sync.Mutex
 )
 
 type (
@@ -26,17 +25,31 @@ type (
 	}
 )
 
-func (s *syncedRandom) Int() int {
+func (s *syncedRandom) IntSync() int {
 	s.mx.Lock()
 	defer s.mx.Unlock()
 
 	return s.rand.Int()
 }
 
+func (s *syncedRandom) Int() int {
+	return s.rand.Int()
+}
+
+func (s *syncedRandom) Acquire() {
+	s.mx.Lock()
+}
+
+func (s *syncedRandom) Release() {
+	s.mx.Unlock()
+}
+
 func GenerateString(length uint, alphabet string) string {
 	result := make([]byte, length)
-	rMutex.Lock()
-	defer rMutex.Unlock()
+
+	R.Acquire()
+	defer R.Release()
+
 	for i := range result {
 		result[i] = alphabet[R.Int()%len(alphabet)]
 	}

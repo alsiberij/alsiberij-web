@@ -3,51 +3,48 @@ package database
 import (
 	"auth/models"
 	"context"
-	"github.com/jackc/pgtype/pgxtype"
+	"encoding/json"
+	"errors"
+	"fmt"
+	"github.com/go-redis/redis/v9"
 	"time"
+)
+
+const (
+	BanRedisKey = "BAN_AUTH_%d"
 )
 
 type (
 	Bans struct {
-		conn pgxtype.Querier
+		conn *redis.Client
 	}
 )
 
-func NewBans(conn pgxtype.Querier) Bans {
-	return Bans{conn: conn}
+func (r *Bans) Create(userId int64, reason string, until int64, byUserId int64) error {
+	t := time.Now()
+	ban := models.BanDTO{
+		UserId:   userId,
+		ByUserId: byUserId,
+		Reason:   reason,
+		At:       t.Unix(),
+		Until:    until,
+	}
+	bytes, _ := json.Marshal(ban)
+
+	return r.conn.Set(context.Background(), fmt.Sprintf(BanRedisKey, userId), bytes, time.Unix(until, 0).Sub(t)).Err()
 }
 
-func (r *Bans) Create(bannedUserId int64, reason string, activeUntil time.Time, createdByUserId int64) error {
-	_, err := r.conn.Exec(context.Background(),
-		`INSERT INTO bans("bannedUserId", reason, "activeUntil", "createdByUserId") VALUES ($1, $2, $3, $4)`,
-		bannedUserId, reason, activeUntil, createdByUserId)
-	return err
-}
-
-func (r *Bans) ActiveByUserId(userId int64) (models.Ban, bool, error) {
-	row, err := r.conn.Query(context.Background(),
-		`SELECT "bannedUserId", reason, "activeUntil", "createdByUserId", "createdAt"
-			FROM bans
-			WHERE "bannedUserId" = $1 AND "activeUntil">CURRENT_TIMESTAMP`,
-		userId)
+func (r *Bans) ByUserId(userId int64) (models.BanDTO, bool, error) {
+	result := r.conn.Get(context.Background(), fmt.Sprintf(BanRedisKey, userId))
+	raw, err := result.Bytes()
 	if err != nil {
-		return models.Ban{}, false, err
+		if errors.Is(err, redis.Nil) {
+			return models.BanDTO{}, false, nil
+		}
+		return models.BanDTO{}, false, err
 	}
 
-	var ban models.Ban
-	var exists bool
-	for row.Next() {
-		exists = true
-		err = row.Scan(&ban.BannedUserId, &ban.Reason, &ban.ActiveUntil, &ban.CreatedByUserId, &ban.CreatedAt)
-	}
-
-	return ban, exists, err
-}
-
-func (r *Bans) ActiveExistsByUserId(userId int64) (bool, error) {
-	var exists bool
-	err := r.conn.QueryRow(context.Background(),
-		`SELECT EXISTS(SELECT FROM bans WHERE "bannedUserId" = $1 AND "activeUntil">CURRENT_TIMESTAMP)`,
-		userId).Scan(&exists)
-	return exists, err
+	var ban models.BanDTO
+	err = json.Unmarshal(raw, &ban)
+	return ban, true, err
 }

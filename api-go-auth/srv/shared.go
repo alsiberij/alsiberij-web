@@ -7,5 +7,6 @@ import (
 
 var (
 	PostgresAuth database.Postgres
+	Redis        database.Redis
 	Logger       logging.Logger
 )

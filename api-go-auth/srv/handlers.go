@@ -4,7 +4,6 @@ import (
 	"auth/database"
 	"auth/jwt"
 	"auth/utils"
-	"context"
 	"encoding/json"
 	"fmt"
 	"github.com/valyala/fasthttp"
@@ -13,9 +12,10 @@ import (
 )
 
 const (
-	RefreshTokenLength   = uint(1024)
-	RefreshTokenAlphabet = "-="
-	RefreshTokenLifeTime = 647 * 24 * time.Hour
+	RefreshTokenLength         = uint(1024)
+	RefreshTokenAlphabet       = `<->`
+	RefreshTokenAlphabetRegexp = `^[\<\-\>]+$`
+	RefreshTokenLifeTime       = 24 * time.Hour
 
 	RefreshTokenRevokeTypeCurrent          = "CURRENT"
 	RefreshTokenRevokeTypeAll              = "ALL"
@@ -60,9 +60,9 @@ func Login(ctx *fasthttp.RequestCtx) {
 		return
 	}
 
-	banRep := PostgresAuth.Bans(conn)
+	banRep := Redis.Bans()
 
-	ban, exists, err := banRep.ActiveByUserId(userId)
+	ban, exists, err := banRep.ByUserId(userId)
 	if err != nil {
 		Set500Error(ctx, err)
 		return
@@ -70,9 +70,7 @@ func Login(ctx *fasthttp.RequestCtx) {
 	if exists {
 		userMsg := AccountIsBannedUserMessage
 		userMsg.Message = fmt.Sprintf(
-			userMsg.Message, ban.Reason, ban.CreatedByUserId,
-			ban.CreatedAt.Format("15:04 2006-01-02"),
-			ban.ActiveUntil.Format("15:04 2006-01-02"))
+			userMsg.Message, ban.Reason, ban.ByUserId, ban.At, ban.Until)
 		Set403WithUserMessage(ctx, userMsg)
 		return
 	}
@@ -301,22 +299,7 @@ func ChangeUserBanStatus(ctx *fasthttp.RequestCtx) {
 	}
 	defer conn.Release()
 
-	tx, err := conn.Begin(context.Background())
-	if err != nil {
-		Set500Error(ctx, err)
-		return
-	}
-	defer tx.Rollback(context.Background())
-
-	bansRep := PostgresAuth.Bans(tx)
-
-	exists, err := bansRep.ActiveExistsByUserId(userId)
-	if exists {
-		Set400(ctx, BanAlreadyExistsMessage)
-		return
-	}
-
-	userRep := PostgresAuth.Users(tx)
+	userRep := PostgresAuth.Users(conn)
 
 	userRole, exists, err := userRep.RoleById(userId)
 	if err != nil {
@@ -351,19 +334,15 @@ func ChangeUserBanStatus(ctx *fasthttp.RequestCtx) {
 		return
 	}
 
-	err = bansRep.Create(userId, request.Reason, time.Unix(request.ActiveUntil, 0), jwtToken.Sub)
+	bans := Redis.Bans()
+
+	err = bans.Create(userId, request.Reason, request.Until, jwtToken.Sub)
 	if err != nil {
 		Set500Error(ctx, err)
 		return
 	}
 
-	refTokenRep := PostgresAuth.RefreshTokens(tx)
+	refTokenRep := PostgresAuth.RefreshTokens(conn)
 
-	_, err = refTokenRep.RevokeAllByUserId(userId)
-	if err != nil {
-		Set500Error(ctx, err)
-		return
-	}
-
-	_ = tx.Commit(context.Background())
+	_, _ = refTokenRep.RevokeAllByUserId(userId)
 }
