@@ -29,6 +29,14 @@ services:
       dockerfile: Dockerfile-MIGRATE
     container_name: mgt
 
+  redis-1:
+    build:
+      context: .
+      dockerfile: Dockerfile-REDIS-1
+    container_name: rds-1
+    volumes:
+      - ./redis-1/data:/data
+
   #SERVICES
 
   api-go-auth:
