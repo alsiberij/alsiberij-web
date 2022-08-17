@@ -55,7 +55,7 @@ var (
 		InternalCode: -8,
 	}
 	AccountIsBannedUserMessage = UserMessage{
-		Message:      "Ваш аккаунт заблокирован",
+		Message:      "Ваш аккаунт заблокирован по причине '%s' пользователем #%d с %s по %s",
 		InternalCode: -9,
 	}
 	InvalidUserIdUserMessage = UserMessage{
@@ -65,6 +65,18 @@ var (
 	InvalidRevokingRefreshTokenType = UserMessage{
 		Message:      "Неверный тип отзыва токена обновления",
 		InternalCode: -11,
+	}
+	InvalidBanReasonMessage = UserMessage{
+		Message:      "Неверная причина блокировки",
+		InternalCode: -12,
+	}
+	InvalidBanTimeMessage = UserMessage{
+		Message:      "Минимальное время блокировки 5 минут",
+		InternalCode: -13,
+	}
+	BanAlreadyExistsMessage = UserMessage{
+		Message:      "У пользователя уже есть активная блокировка",
+		InternalCode: -14,
 	}
 )
 
@@ -99,6 +111,16 @@ func Set403(ctx *fasthttp.RequestCtx) {
 			Message:      "Доступ запрещен",
 			InternalCode: 1,
 		},
+	})
+	ctx.SetContentType("application/json")
+	ctx.SetStatusCode(fasthttp.StatusForbidden)
+}
+
+func Set403WithUserMessage(ctx *fasthttp.RequestCtx, userMessage UserMessage) {
+	_ = json.NewEncoder(ctx).Encode(HttpError{
+		HttpCode: fasthttp.StatusForbidden,
+		DevMsg:   "",
+		UsrMsg:   userMessage,
 	})
 	ctx.SetContentType("application/json")
 	ctx.SetStatusCode(fasthttp.StatusForbidden)

@@ -4,11 +4,10 @@ import "time"
 
 type (
 	Ban struct {
-		BannedUserId    int64     `json:"userId"`
-		IsActive        bool      `json:"isActive"`
-		ActiveUntil     time.Time `json:"activeUntil"`
-		CreatedAt       time.Time `json:"createdAt"`
-		CreatedByUserId int64     `json:"createdByUserId"`
-		Reason          string    `json:"reason"`
+		BannedUserId    int64
+		Reason          string
+		ActiveUntil     time.Time
+		CreatedByUserId int64
+		CreatedAt       time.Time
 	}
 )

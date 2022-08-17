@@ -2,10 +2,10 @@ package srv
 
 import (
 	"auth/jwt"
-	"auth/models"
 	"fmt"
 	"regexp"
 	"strings"
+	"time"
 )
 
 type (
@@ -41,13 +41,9 @@ type (
 		Password string `json:"password"`
 	}
 
-	UsersResponse struct {
-		Count int `json:"count"`
-		List  []models.UserShort
-	}
-
-	ChangeUserStatusRequest struct {
-		IsBanned bool `json:"isBanned"`
+	BanRequest struct {
+		Reason      string `json:"reason"`
+		ActiveUntil int64  `json:"activeUntil"`
 	}
 
 	ValidateJwtResponse struct {
@@ -109,6 +105,18 @@ func (r *RegisterRequest) Validate() (bool, UserMessage) {
 
 	if !ValidPassword(r.Password) {
 		return false, InvalidPasswordUserMessage
+	}
+
+	return true, UserMessage{}
+}
+
+func (r *BanRequest) Validate() (bool, UserMessage) {
+	if len([]rune(r.Reason)) < 3 || len([]rune(r.Reason)) > 512 {
+		return false, InvalidBanReasonMessage
+	}
+
+	if time.Unix(r.ActiveUntil, 0).Before(time.Now().Add(time.Minute * 5)) {
+		return false, InvalidBanTimeMessage
 	}
 
 	return true, UserMessage{}

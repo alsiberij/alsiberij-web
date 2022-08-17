@@ -4,6 +4,7 @@ import (
 	"auth/models"
 	"context"
 	"github.com/jackc/pgtype/pgxtype"
+	"time"
 )
 
 type (
@@ -22,81 +23,50 @@ func (r *RefreshTokens) Create(userId int64, token string) error {
 	return err
 }
 
-func (r *RefreshTokens) ByToken(token string) (models.RefreshToken, bool, error) {
+func (r *RefreshTokens) ByToken(token string, lifetime time.Duration) (models.RefreshTokenWithUserData, bool, error) {
+	lifetime = lifetime / time.Second
 	rows, err := r.conn.Query(context.Background(),
-		`SELECT t.id, t.token, t."isExpired", t."issuedAt", t."lastUsedAt",
-       			u.id, u.email, u.login, u.password, u.role, u."createdAt"
-			FROM refresh_tokens AS t JOIN users AS u ON t."userId" = u.id
-			WHERE t.token = $1`, token)
+		`SELECT t.id AS "tokenId", u.id AS "userId", u.role AS "userRole"
+				FROM refresh_tokens as t
+         		JOIN users AS u ON t."userId" = u.id
+				WHERE token = $1 AND EXTRACT(EPOCH FROM (CURRENT_TIMESTAMP - "lastUsedAt")) < $2 AND "isRevoked" IS FALSE`,
+		token, lifetime)
 	if err != nil {
-		return models.RefreshToken{}, false, err
+		return models.RefreshTokenWithUserData{}, false, err
 	}
 
-	var refreshToken models.RefreshToken
 	var exists bool
+	var tokenWithData models.RefreshTokenWithUserData
 	for rows.Next() {
 		exists = true
-		err = rows.Scan(&refreshToken.Id, &refreshToken.Token, &refreshToken.IsExpired,
-			&refreshToken.IssuedAt, &refreshToken.LastUsedAt, &refreshToken.User.Id, &refreshToken.User.Email,
-			&refreshToken.User.Login, &refreshToken.User.Password, &refreshToken.User.Role, &refreshToken.User.CreatedAt)
-		if err != nil {
-			return models.RefreshToken{}, true, err
-		}
-	}
-	return refreshToken, exists, err
-}
-
-func (r *RefreshTokens) ByTokenNotExpired(token string) (models.RefreshToken, bool, error) {
-	rows, err := r.conn.Query(context.Background(),
-		`SELECT t.id, t.token, t."isExpired", t."issuedAt", t."lastUsedAt",
-       			u.id, u.email, u.login, u.password, u.role, u."createdAt"
-			FROM refresh_tokens AS t JOIN users AS u ON t."userId" = u.id
-			WHERE t.token = $1 AND "isExpired" IS FALSE`, token)
-	if err != nil {
-		return models.RefreshToken{}, false, err
+		err = rows.Scan(&tokenWithData.Id, &tokenWithData.UserId, &tokenWithData.UserRole)
 	}
 
-	var refreshToken models.RefreshToken
-	var exists bool
-	for rows.Next() {
-		exists = true
-		err = rows.Scan(&refreshToken.Id, &refreshToken.Token, &refreshToken.IsExpired,
-			&refreshToken.IssuedAt, &refreshToken.LastUsedAt, &refreshToken.User.Id, &refreshToken.User.Email,
-			&refreshToken.User.Login, &refreshToken.User.Password, &refreshToken.User.Role, &refreshToken.User.CreatedAt)
-		if err != nil {
-			return models.RefreshToken{}, true, err
-		}
-	}
-	return refreshToken, exists, err
+	_, err = r.conn.Exec(context.Background(),
+		`UPDATE refresh_tokens SET "lastUsedAt" = CURRENT_TIMESTAMP WHERE token = $1`, token)
+
+	return tokenWithData, exists, err
 }
 
-func (r *RefreshTokens) SetExpired(id int64) (bool, error) {
-	tag, err := r.conn.Exec(context.Background(), `UPDATE refresh_tokens SET "isExpired" = TRUE WHERE id = $1`, id)
-	return tag.RowsAffected() > 0, err
+func (r *RefreshTokens) RevokeToken(token string) (int64, error) {
+	tag, err := r.conn.Exec(context.Background(),
+		`UPDATE refresh_tokens SET "isRevoked" = TRUE WHERE token = $1 AND "isRevoked" IS FALSE`, token)
+	return tag.RowsAffected(), err
 }
 
-func (r *RefreshTokens) UpdateLastUsageTime(token string) (bool, error) {
-	tag, err := r.conn.Exec(context.Background(), `UPDATE refresh_tokens SET "lastUsedAt" = CURRENT_TIMESTAMP WHERE token = $1`,
-		token)
-	return tag.RowsAffected() > 0, err
+func (r *RefreshTokens) RevokeAllTokens(token string) (int64, error) {
+	tag, err := r.conn.Exec(context.Background(),
+		`UPDATE refresh_tokens SET "isRevoked" = TRUE WHERE "userId" = (SELECT "userId" FROM refresh_tokens WHERE token = $1) AND "isRevoked" IS FALSE`, token)
+	return tag.RowsAffected(), err
 }
 
-func (r *RefreshTokens) SetExpiredByUserId(userId int64) (bool, error) {
-	tag, err := r.conn.Exec(context.Background(), `UPDATE refresh_tokens SET "isExpired" = TRUE WHERE "userId" = $1`, userId)
-	return tag.RowsAffected() > 0, err
+func (r *RefreshTokens) RevokeAllTokensExceptOne(token string) (int64, error) {
+	tag, err := r.conn.Exec(context.Background(),
+		`UPDATE refresh_tokens SET "isRevoked" = TRUE WHERE "userId" = (SELECT "userId" FROM refresh_tokens WHERE token = $1) AND token != $1 AND "isRevoked" IS FALSE`, token)
+	return tag.RowsAffected(), err
 }
 
-func (r *RefreshTokens) SetExpiredByToken(token string) (bool, error) {
-	tag, err := r.conn.Exec(context.Background(), `UPDATE refresh_tokens SET "isExpired" = TRUE WHERE token = $1`, token)
-	return tag.RowsAffected() > 0, err
-}
-
-func (r *RefreshTokens) SetExpiredByTokenBelongingUser(token string) (bool, error) {
-	tag, err := r.conn.Exec(context.Background(), `UPDATE refresh_tokens SET "isExpired" = TRUE WHERE "userId" = (SELECT "userId" FROM refresh_tokens WHERE token = $1)`, token)
-	return tag.RowsAffected() > 0, err
-}
-
-func (r *RefreshTokens) SetExpiredByTokenBelongingUserExceptCurrent(token string) (bool, error) {
-	tag, err := r.conn.Exec(context.Background(), `UPDATE refresh_tokens SET "isExpired" = TRUE WHERE "userId" = (SELECT "userId" FROM refresh_tokens WHERE token = $1) AND token != $1`, token)
-	return tag.RowsAffected() > 0, err
+func (r *RefreshTokens) RevokeAllByUserId(userId int64) (int64, error) {
+	tag, err := r.conn.Exec(context.Background(), `UPDATE refresh_tokens SET "isRevoked" = TRUE WHERE "userId" = $1 AND "isRevoked" IS FALSE`, userId)
+	return tag.RowsAffected(), err
 }

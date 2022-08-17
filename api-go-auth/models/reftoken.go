@@ -6,11 +6,16 @@ import (
 
 type (
 	RefreshToken struct {
-		Id         int64     `json:"id"`
-		User       User      `json:"user"`
-		Token      string    `json:"token"`
-		IsExpired  bool      `json:"isExpired"`
-		IssuedAt   time.Time `json:"issuedAt"`
-		LastUsedAt time.Time `json:"lastUsed"`
+		Id         int64
+		User       User
+		Token      string
+		IssuedAt   time.Time
+		LastUsedAt time.Time
+	}
+
+	RefreshTokenWithUserData struct {
+		Id       int64
+		UserId   int64
+		UserRole string
 	}
 )

@@ -4,16 +4,18 @@ import (
 	"auth/database"
 	"auth/jwt"
 	"auth/utils"
+	"context"
 	"encoding/json"
+	"fmt"
 	"github.com/valyala/fasthttp"
 	"strconv"
 	"time"
 )
 
 const (
-	RefreshTokenLength     = uint(1024)
-	RefreshTokenAlphabet   = "-="
-	RefreshTokenLifePeriod = 7 * 24 * time.Hour
+	RefreshTokenLength   = uint(1024)
+	RefreshTokenAlphabet = "-="
+	RefreshTokenLifeTime = 647 * 24 * time.Hour
 
 	RefreshTokenRevokeTypeCurrent          = "CURRENT"
 	RefreshTokenRevokeTypeAll              = "ALL"
@@ -48,7 +50,7 @@ func Login(ctx *fasthttp.RequestCtx) {
 
 	userRep := PostgresAuth.Users(conn)
 
-	user, exists, err := userRep.ByCredentials(request.Login, request.Password)
+	userId, exists, err := userRep.IdByCredentials(request.Login, request.Password)
 	if err != nil {
 		Set500Error(ctx, err)
 		return
@@ -58,10 +60,27 @@ func Login(ctx *fasthttp.RequestCtx) {
 		return
 	}
 
+	banRep := PostgresAuth.Bans(conn)
+
+	ban, exists, err := banRep.ActiveByUserId(userId)
+	if err != nil {
+		Set500Error(ctx, err)
+		return
+	}
+	if exists {
+		userMsg := AccountIsBannedUserMessage
+		userMsg.Message = fmt.Sprintf(
+			userMsg.Message, ban.Reason, ban.CreatedByUserId,
+			ban.CreatedAt.Format("15:04 2006-01-02"),
+			ban.ActiveUntil.Format("15:04 2006-01-02"))
+		Set403WithUserMessage(ctx, userMsg)
+		return
+	}
+
 	refTokenRep := PostgresAuth.RefreshTokens(conn)
 
 	refreshToken := utils.GenerateString(RefreshTokenLength, RefreshTokenAlphabet)
-	err = refTokenRep.Create(user.Id, refreshToken)
+	err = refTokenRep.Create(userId, refreshToken)
 	if err != nil {
 		Set500Error(ctx, err)
 		return
@@ -96,7 +115,7 @@ func Refresh(ctx *fasthttp.RequestCtx) {
 
 	refTokenRep := PostgresAuth.RefreshTokens(conn)
 
-	refreshToken, exists, err := refTokenRep.ByTokenNotExpired(request.RefreshToken)
+	tokenData, exists, err := refTokenRep.ByToken(request.RefreshToken, RefreshTokenLifeTime)
 	if err != nil {
 		Set500Error(ctx, err)
 		return
@@ -106,23 +125,7 @@ func Refresh(ctx *fasthttp.RequestCtx) {
 		return
 	}
 
-	if time.Now().Sub(refreshToken.LastUsedAt) > RefreshTokenLifePeriod {
-		_, err = refTokenRep.SetExpired(refreshToken.Id)
-		if err != nil {
-			Set500Error(ctx, err)
-		} else {
-			Set401(ctx)
-		}
-		return
-	}
-
-	_, err = refTokenRep.UpdateLastUsageTime(refreshToken.Token)
-	if err != nil {
-		Set500Error(ctx, err)
-		return
-	}
-
-	token, exp, iat := jwt.Create(refreshToken.User.Id, refreshToken.User.Role)
+	token, exp, iat := jwt.Create(tokenData.UserId, tokenData.UserRole)
 	response := RefreshResponse{
 		JWT:       token,
 		ExpiresAt: exp,
@@ -154,31 +157,22 @@ func Revoke(ctx *fasthttp.RequestCtx) {
 	}
 	defer conn.Release()
 
-	refTokenRep := PostgresAuth.RefreshTokens(conn)
-
-	_, exists, err := refTokenRep.ByToken(request.RefreshToken)
-	if err != nil {
-		Set500Error(ctx, err)
-		return
-	}
-	if !exists {
-		Set400(ctx, InvalidRefreshTokenUserMessage)
-		return
-	}
-
 	revokeType := string(ctx.QueryArgs().Peek("type"))
+
+	refTokenRep := PostgresAuth.RefreshTokens(conn)
 
 	switch revokeType {
 	case RefreshTokenRevokeTypeCurrent:
-		_, err = refTokenRep.SetExpiredByToken(request.RefreshToken)
+		_, err = refTokenRep.RevokeToken(request.RefreshToken)
 	case RefreshTokenRevokeTypeAll:
-		_, err = refTokenRep.SetExpiredByTokenBelongingUser(request.RefreshToken)
+		_, err = refTokenRep.RevokeAllTokens(request.RefreshToken)
 	case RefreshTokenRevokeTypeAllExceptCurrent:
-		_, err = refTokenRep.SetExpiredByTokenBelongingUserExceptCurrent(request.RefreshToken)
+		_, err = refTokenRep.RevokeAllTokensExceptOne(request.RefreshToken)
 	default:
 		Set400(ctx, InvalidRevokingRefreshTokenType)
 		return
 	}
+
 	if err != nil {
 		Set500Error(ctx, err)
 	}
@@ -200,6 +194,7 @@ func CheckEmail(ctx *fasthttp.RequestCtx) {
 		return
 	}
 
+	//TODO REDIS
 	//TODO GENERATE CODE
 	code := 111111
 	//TODO SEND EMAIL
@@ -278,30 +273,7 @@ func ValidateJWT(ctx *fasthttp.RequestCtx) {
 	ctx.SetContentType("application/json")
 }
 
-func Users(ctx *fasthttp.RequestCtx) {
-	conn, err := PostgresAuth.AcquireConnection()
-	if err != nil {
-		Set500Error(ctx, err)
-		return
-	}
-	defer conn.Release()
-
-	userRep := PostgresAuth.Users(conn)
-
-	list, err := userRep.AllShort()
-	if err != nil {
-		Set500Error(ctx, err)
-		return
-	}
-
-	_ = json.NewEncoder(ctx).Encode(UsersResponse{
-		Count: len(list),
-		List:  list,
-	})
-	ctx.SetContentType("application/json")
-}
-
-func ChangeUserStatus(ctx *fasthttp.RequestCtx) {
+func ChangeUserBanStatus(ctx *fasthttp.RequestCtx) {
 	userIdFromRequest := ctx.UserValue("id").(string)
 	userId, err := strconv.ParseInt(userIdFromRequest, 10, 64)
 	if err != nil {
@@ -309,10 +281,16 @@ func ChangeUserStatus(ctx *fasthttp.RequestCtx) {
 		return
 	}
 
-	var request ChangeUserStatusRequest
+	var request BanRequest
 	err = json.Unmarshal(ctx.Request.Body(), &request)
 	if err != nil {
 		Set400(ctx, InvalidRequestBodyUserMessage)
+		return
+	}
+
+	isValid, userMessage := request.Validate()
+	if !isValid {
+		Set400(ctx, userMessage)
 		return
 	}
 
@@ -323,30 +301,48 @@ func ChangeUserStatus(ctx *fasthttp.RequestCtx) {
 	}
 	defer conn.Release()
 
-	userRep := PostgresAuth.Users(conn)
+	tx, err := conn.Begin(context.Background())
+	if err != nil {
+		Set500Error(ctx, err)
+		return
+	}
+	defer tx.Rollback(context.Background())
 
-	user, exists, err := userRep.ById(userId)
+	bansRep := PostgresAuth.Bans(tx)
+
+	exists, err := bansRep.ActiveExistsByUserId(userId)
+	if exists {
+		Set400(ctx, BanAlreadyExistsMessage)
+		return
+	}
+
+	userRep := PostgresAuth.Users(tx)
+
+	userRole, exists, err := userRep.RoleById(userId)
 	if err != nil {
 		Set500Error(ctx, err)
 		return
 	}
 	if !exists {
 		Set400(ctx, InvalidUserIdUserMessage)
+		return
 	}
 
-	switch ctx.UserValue(JwtContext).(jwt.Claims).Rol {
+	jwtToken := ctx.UserValue(JwtContext).(jwt.Claims)
+
+	switch jwtToken.Rol {
 	case jwt.RoleModerator:
-		if !utils.ExistsIn(jwt.CanBeBannedByModerator, user.Role) {
+		if !utils.ExistsIn(jwt.CanBeBannedByModerator, userRole) {
 			Set403(ctx)
 			return
 		}
 	case jwt.RoleAdmin:
-		if !utils.ExistsIn(jwt.CanBeBannedByAdmin, user.Role) {
+		if !utils.ExistsIn(jwt.CanBeBannedByAdmin, userRole) {
 			Set403(ctx)
 			return
 		}
 	case jwt.RoleCreator:
-		if !utils.ExistsIn(jwt.CanBeBannedByCreator, user.Role) {
+		if !utils.ExistsIn(jwt.CanBeBannedByCreator, userRole) {
 			Set403(ctx)
 			return
 		}
@@ -355,14 +351,19 @@ func ChangeUserStatus(ctx *fasthttp.RequestCtx) {
 		return
 	}
 
-	_, err = userRep.ChangeStatus(user.Id, request.IsBanned)
+	err = bansRep.Create(userId, request.Reason, time.Unix(request.ActiveUntil, 0), jwtToken.Sub)
 	if err != nil {
 		Set500Error(ctx, err)
 		return
 	}
 
-	if request.IsBanned {
-		refTokenRep := PostgresAuth.RefreshTokens(conn)
-		_, _ = refTokenRep.SetExpiredByUserId(user.Id)
+	refTokenRep := PostgresAuth.RefreshTokens(tx)
+
+	_, err = refTokenRep.RevokeAllByUserId(userId)
+	if err != nil {
+		Set500Error(ctx, err)
+		return
 	}
+
+	_ = tx.Commit(context.Background())
 }
