@@ -17,7 +17,10 @@ func NewBans(conn pgxtype.Querier) Bans {
 }
 
 func (b *Bans) ByUserId(userId int64) (models.Ban, bool, error) {
-	row, err := b.conn.Query(context.Background(), `SELECT "userId", "isActive", "activeUntil", "createdAt", "createdByUserId", reason FROM bans WHERE "userId" = $1 AND "isActive" IS TRUE`,
+	row, err := b.conn.Query(context.Background(),
+		`SELECT "bannedUserId", reason, "activeUntil", "createdByUserId", "createdAt"
+			FROM bans
+			WHERE "bannedUserId" = $1 AND "activeUntil">CURRENT_TIMESTAMP`,
 		userId)
 	if err != nil {
 		return models.Ban{}, false, err
@@ -27,14 +30,14 @@ func (b *Bans) ByUserId(userId int64) (models.Ban, bool, error) {
 	var exists bool
 	for row.Next() {
 		exists = true
-		err = row.Scan(&ban.UserId, &ban.IsActive, &ban.ActiveUntil, &ban.CreatedAt, &ban.CreatedByUserId, &ban.Reason)
+		err = row.Scan(&ban.BannedUserId, &ban.Reason, &ban.ActiveUntil, &ban.CreatedByUserId, &ban.CreatedAt)
 	}
 
 	return ban, exists, err
 }
 
-func (b *Bans) Expire(userId int64) (bool, error) {
-	tag, err := b.conn.Exec(context.Background(), `UPDATE bans SET "isActive" = FALSE WHERE "userId" = $1 AND "isActive" IS TRUE`,
+func (b *Bans) ExpireByUserId(userId int64) (bool, error) {
+	tag, err := b.conn.Exec(context.Background(), `UPDATE bans SET "activeUntil" = CURRENT_TIMESTAMP WHERE "bannedUserId" = $1 AND "activeUntil">CURRENT_TIMESTAMP`,
 		userId)
 	return tag.RowsAffected() > 0, err
 }

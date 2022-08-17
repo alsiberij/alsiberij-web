@@ -60,3 +60,7 @@ func (r *Postgres) Users(q pgxtype.Querier) Users {
 func (r *Postgres) RefreshTokens(q pgxtype.Querier) RefreshTokens {
 	return NewRefreshTokens(q)
 }
+
+func (r *Postgres) Bans(q pgxtype.Querier) Bans {
+	return Bans{conn: q}
+}

@@ -3,12 +3,11 @@ ALTER TABLE users
 
 CREATE TABLE bans
 (
-    "userId"          INTEGER                             NOT NULL,
-    "isActive"        BOOLEAN   DEFAULT TRUE              NOT NULL,
-    "activeUntil"     DATE                                NOT NULL,
-    "createdAt"       TIMESTAMP DEFAULT CURRENT_TIMESTAMP NOT NULL,
+    "bannedUserId"    INTEGER                             NOT NULL,
+    "reason"          VARCHAR(512)                        NOT NULL,
+    "activeUntil"     TIMESTAMP                           NOT NULL,
     "createdByUserId" INTEGER                             NOT NULL,
-    "reason"          VARCHAR(512)                        NOT NULL
+    "createdAt"       TIMESTAMP DEFAULT CURRENT_TIMESTAMP NOT NULL
 );
 
-CREATE INDEX ON bans("userId");
+CREATE INDEX ON bans ("bannedUserId");
