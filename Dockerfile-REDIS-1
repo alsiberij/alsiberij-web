@@ -1,0 +1,7 @@
+FROM redis:7.0
+
+COPY ./redis-1/redis.conf /redis.conf
+
+ENV PASS "als_rds"
+
+CMD redis-server /redis.conf --requirepass $PASS
