@@ -1,5 +1,5 @@
 {
-  "pgs-1": {
+  "pgs-1/auth": {
     "user": "als_auth",
     "password": "als_auth",
     "host": "pgs-1",
@@ -8,10 +8,16 @@
     "sslMode": "disable",
     "maxCons": 16
   },
-  "rds-1": {
+  "rds-1/0": {
     "host": "rds-1",
     "port": 6379,
     "password": "als_rds",
     "database": 0
+  },
+  "rds-1/1": {
+    "host": "rds-1",
+    "port": 6379,
+    "password": "als_rds",
+    "database": 1
   }
 }

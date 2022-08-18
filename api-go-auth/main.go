@@ -29,17 +29,23 @@ func init() {
 		log.Fatal(err)
 	}
 
-	pgs, err := database.NewPostgres(config.Pgs)
+	pgs, err := database.NewPostgres(config.PgsAuth)
 	if err != nil {
 		log.Fatalf("UNABLE CONNECT TO POSTGRES: %v", err)
 	}
 	srv.PostgresAuth = pgs
 
-	rds, err := database.NewRedis(config.Rds)
+	rds, err := database.NewRedis(config.Rds0)
 	if err != nil {
-		log.Fatalf("UNABLE CONNECT TO REDIS: %v", err)
+		log.Fatalf("UNABLE CONNECT TO REDIS0: %v", err)
 	}
-	srv.Redis = rds
+	srv.Redis0 = rds
+
+	rds, err = database.NewRedis(config.Rds1)
+	if err != nil {
+		log.Fatalf("UNABLE CONNECT TO REDIS1: %v", err)
+	}
+	srv.Redis1 = rds
 
 	logsPath := os.Getenv("LOGS_PATH")
 	if logsPath == "" {
@@ -47,8 +53,6 @@ func init() {
 	}
 	srv.Logger = logging.NewLogger(logsPath+"/logs-%s.log",
 		os.O_CREATE|os.O_WRONLY|os.O_APPEND, 0666, "2006-01-02T15:04:05")
-
-	go database.EmailCache.GC()
 }
 
 func main() {

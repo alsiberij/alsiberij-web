@@ -34,7 +34,7 @@ func (r *Bans) Create(userId int64, reason string, until int64, byUserId int64) 
 	return r.conn.Set(context.Background(), fmt.Sprintf(BanRedisKey, userId), bytes, time.Unix(until, 0).Sub(t)).Err()
 }
 
-func (r *Bans) ByUserId(userId int64) (models.BanDTO, bool, error) {
+func (r *Bans) Get(userId int64) (models.BanDTO, bool, error) {
 	result := r.conn.Get(context.Background(), fmt.Sprintf(BanRedisKey, userId))
 	raw, err := result.Bytes()
 	if err != nil {

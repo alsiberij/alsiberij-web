@@ -41,9 +41,9 @@ func Authorize(h fasthttp.RequestHandler) fasthttp.RequestHandler {
 			return
 		}
 
-		bans := Redis.Bans()
+		bans := Redis0.Bans()
 
-		ban, exists, err := bans.ByUserId(claims.Sub)
+		ban, exists, err := bans.Get(claims.Sub)
 		if err != nil {
 			Set500Error(ctx, err)
 			return
@@ -82,9 +82,9 @@ func AuthorizeRoles(roles []string) Middleware {
 				return
 			}
 
-			bans := Redis.Bans()
+			bans := Redis0.Bans()
 
-			ban, exists, err := bans.ByUserId(claims.Sub)
+			ban, exists, err := bans.Get(claims.Sub)
 			if err != nil {
 				Set500Error(ctx, err)
 				return

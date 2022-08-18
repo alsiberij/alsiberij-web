@@ -1,7 +1,6 @@
 package srv
 
 import (
-	"auth/database"
 	"auth/jwt"
 	"auth/utils"
 	"encoding/json"
@@ -20,6 +19,9 @@ const (
 	RefreshTokenRevokeTypeCurrent          = "CURRENT"
 	RefreshTokenRevokeTypeAll              = "ALL"
 	RefreshTokenRevokeTypeAllExceptCurrent = "ALL_EXCEPT_CURRENT"
+
+	VerificationCodeLength   = 8
+	VerificationCodeLifetime = 5 * time.Minute
 )
 
 func Test(ctx *fasthttp.RequestCtx) {
@@ -60,9 +62,9 @@ func Login(ctx *fasthttp.RequestCtx) {
 		return
 	}
 
-	banRep := Redis.Bans()
+	banRep := Redis0.Bans()
 
-	ban, exists, err := banRep.ByUserId(userId)
+	ban, exists, err := banRep.Get(userId)
 	if err != nil {
 		Set500Error(ctx, err)
 		return
@@ -192,12 +194,32 @@ func CheckEmail(ctx *fasthttp.RequestCtx) {
 		return
 	}
 
-	//TODO REDIS
-	//TODO GENERATE CODE
-	code := 111111
-	//TODO SEND EMAIL
+	conn, err := PostgresAuth.AcquireConnection()
+	if err != nil {
+		Set500Error(ctx, err)
+		return
+	}
+	defer conn.Release()
 
-	database.EmailCache.Save(request.Email, code)
+	users := PostgresAuth.Users(conn)
+
+	exists, err := users.EmailExists(request.Email)
+	if err != nil {
+		Set500Error(ctx, err)
+		return
+	}
+	if exists {
+		Set400(ctx, EmailExistsUserMessage)
+		return
+	}
+
+	code := utils.GenerateCode(VerificationCodeLength)
+
+	codes := Redis1.Codes()
+	err = codes.Create(request.Email, code, VerificationCodeLifetime)
+	if err != nil {
+		Set500Error(ctx, err)
+	}
 }
 
 func Register(ctx *fasthttp.RequestCtx) {
@@ -214,8 +236,13 @@ func Register(ctx *fasthttp.RequestCtx) {
 		return
 	}
 
-	code, ok := database.EmailCache.Search(request.Email)
-	if !(ok && code == request.Code) {
+	codes := Redis1.Codes()
+	code, exists, err := codes.Get(request.Email)
+	if err != nil {
+		Set500Error(ctx, err)
+		return
+	}
+	if !(exists && code == request.Code) {
 		Set400(ctx, InvalidCodeUserMessage)
 		return
 	}
@@ -229,7 +256,7 @@ func Register(ctx *fasthttp.RequestCtx) {
 
 	userRep := PostgresAuth.Users(conn)
 
-	exists, err := userRep.LoginExists(request.Login)
+	exists, err = userRep.LoginExists(request.Login)
 	if err != nil {
 		Set500Error(ctx, err)
 		return
@@ -334,7 +361,7 @@ func CreateBan(ctx *fasthttp.RequestCtx) {
 		return
 	}
 
-	bans := Redis.Bans()
+	bans := Redis0.Bans()
 
 	err = bans.Create(userId, request.Reason, request.Until, jwtToken.Sub)
 	if err != nil {
@@ -381,7 +408,7 @@ func DeleteBan(ctx *fasthttp.RequestCtx) {
 		return
 	}
 
-	bans := Redis.Bans()
+	bans := Redis0.Bans()
 
 	err = bans.Delete(userId)
 	if err != nil {

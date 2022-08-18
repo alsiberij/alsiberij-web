@@ -35,7 +35,7 @@ type (
 
 	RegisterRequest struct {
 		Email    string `json:"email"`
-		Code     int    `json:"code"`
+		Code     string `json:"code"`
 		Login    string `json:"login"`
 		Password string `json:"password"`
 	}
@@ -93,7 +93,7 @@ func (r *RegisterRequest) Validate() (bool, UserMessage) {
 		return false, InvalidEmailUserMessage
 	}
 
-	if r.Code < 100_000 || r.Code > 999_999 {
+	if len(r.Code) != VerificationCodeLength {
 		return false, InvalidCodeUserMessage
 	}
 
