@@ -64,7 +64,6 @@ func main() {
 	r.POST(V1+"/login", srv.Login)
 
 	r.POST(V1+"/refresh", srv.Refresh)
-
 	r.DELETE(V1+"/refresh", srv.Revoke)
 
 	r.POST(V1+"/checkEmail", srv.CheckEmail)
@@ -73,8 +72,10 @@ func main() {
 
 	r.GET(V1+"/validateJWT", srv.WithMiddlewares(srv.ValidateJWT, srv.Authorize))
 
-	r.POST(V1+"/user/{id}/ban", srv.WithMiddlewares(srv.ChangeUserBanStatus,
+	r.POST(V1+"/user/{id}/ban", srv.WithMiddlewares(srv.CreateBan,
 		srv.AuthorizeRoles([]string{jwt.RoleCreator, jwt.RoleAdmin, jwt.RoleModerator})))
+	r.DELETE(V1+"/user/{id}/ban", srv.WithMiddlewares(srv.DeleteBan,
+		srv.AuthorizeRoles([]string{jwt.RoleCreator, jwt.RoleAdmin})))
 
 	//TODO REMOVE DEBUG
 	r.GET("/debug/pprof/profile", pprofhandler.PprofHandler)

@@ -175,7 +175,7 @@ func Revoke(ctx *fasthttp.RequestCtx) {
 		Set500Error(ctx, err)
 	}
 
-	ctx.SetStatusCode(fasthttp.StatusNoContent)
+	ctx.SetStatusCode(fasthttp.StatusOK)
 }
 
 func CheckEmail(ctx *fasthttp.RequestCtx) {
@@ -271,7 +271,7 @@ func ValidateJWT(ctx *fasthttp.RequestCtx) {
 	ctx.SetContentType("application/json")
 }
 
-func ChangeUserBanStatus(ctx *fasthttp.RequestCtx) {
+func CreateBan(ctx *fasthttp.RequestCtx) {
 	userIdFromRequest := ctx.UserValue("id").(string)
 	userId, err := strconv.ParseInt(userIdFromRequest, 10, 64)
 	if err != nil {
@@ -345,4 +345,46 @@ func ChangeUserBanStatus(ctx *fasthttp.RequestCtx) {
 	refTokenRep := PostgresAuth.RefreshTokens(conn)
 
 	_, _ = refTokenRep.RevokeAllByUserId(userId)
+}
+
+func DeleteBan(ctx *fasthttp.RequestCtx) {
+	userIdFromRequest := ctx.UserValue("id").(string)
+	userId, err := strconv.ParseInt(userIdFromRequest, 10, 64)
+	if err != nil {
+		Set400(ctx, InvalidUserIdUserMessage)
+		return
+	}
+
+	conn, err := PostgresAuth.AcquireConnection()
+	if err != nil {
+		Set500Error(ctx, err)
+		return
+	}
+	defer conn.Release()
+
+	userRep := PostgresAuth.Users(conn)
+
+	userRole, exists, err := userRep.RoleById(userId)
+	if err != nil {
+		Set500Error(ctx, err)
+		return
+	}
+	if !exists {
+		Set400(ctx, InvalidUserIdUserMessage)
+		return
+	}
+
+	jwtToken := ctx.UserValue(JwtContext).(jwt.Claims)
+
+	if jwtToken.Rol == jwt.RoleAdmin && userRole == jwt.RoleAdmin {
+		Set403(ctx)
+		return
+	}
+
+	bans := Redis.Bans()
+
+	err = bans.Delete(userId)
+	if err != nil {
+		Set500Error(ctx, err)
+	}
 }

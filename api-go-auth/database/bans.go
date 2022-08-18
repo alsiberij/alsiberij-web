@@ -48,3 +48,7 @@ func (r *Bans) ByUserId(userId int64) (models.BanDTO, bool, error) {
 	err = json.Unmarshal(raw, &ban)
 	return ban, true, err
 }
+
+func (r *Bans) Delete(userId int64) error {
+	return r.conn.Del(context.Background(), fmt.Sprintf(BanRedisKey, userId)).Err()
+}
