@@ -21,9 +21,7 @@ const (
 	V1 = "/v1"
 )
 
-//TODO tests
-
-//TODO base64encodeToString
+//TODO TESTS
 
 func init() {
 	config, err := ReadConfig("config.json")
@@ -77,10 +75,6 @@ func main() {
 
 	r.POST(V1+"/user/{id}/ban", srv.WithMiddlewares(srv.ChangeUserBanStatus,
 		srv.AuthorizeRoles([]string{jwt.RoleCreator, jwt.RoleAdmin, jwt.RoleModerator})))
-
-	//TODO STORE BANNED IN REDIS:
-	//BANNED_{userId}_{service} => {"reason": "", "until": 1660737410} => TTL UNTIL - CURRENT_TIMESAMP
-	//TODO UNBAN
 
 	//TODO REMOVE DEBUG
 	r.GET("/debug/pprof/profile", pprofhandler.PprofHandler)
