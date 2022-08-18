@@ -19,10 +19,18 @@ type (
 )
 
 func (r *Codes) Create(email, code string, lifetime time.Duration) error {
+	if r.conn == nil {
+		return ErrRedisNotInitialized
+	}
+
 	return r.conn.Set(context.Background(), fmt.Sprintf(VerificationCodeRedisKey, email), code, lifetime).Err()
 }
 
 func (r *Codes) Get(email string) (string, bool, error) {
+	if r.conn == nil {
+		return "", false, ErrRedisNotInitialized
+	}
+
 	response := r.conn.Get(context.Background(), fmt.Sprintf(VerificationCodeRedisKey, email))
 	result, err := response.Result()
 	if err != nil {

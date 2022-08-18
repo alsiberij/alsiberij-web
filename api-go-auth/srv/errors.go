@@ -5,7 +5,6 @@ import (
 	"encoding/json"
 	"errors"
 	"github.com/valyala/fasthttp"
-	"runtime/debug"
 )
 
 type (
@@ -55,7 +54,7 @@ var (
 		InternalCode: -8,
 	}
 	AccountIsBannedUserMessage = UserMessage{
-		Message:      "Ваш аккаунт заблокирован по причине '%s' пользователем #%d с @%d@ по @%d@",
+		Message:      "Ваш аккаунт заблокирован",
 		InternalCode: -9,
 	}
 	InvalidUserIdUserMessage = UserMessage{
@@ -182,8 +181,6 @@ func Set500Panic(ctx *fasthttp.RequestCtx, i interface{}) {
 	default:
 		devMsg += "Unknown error"
 	}
-
-	devMsg += string(debug.Stack())
 
 	go Logger.LogError(errors.New(devMsg), logging.LevelFatal)
 

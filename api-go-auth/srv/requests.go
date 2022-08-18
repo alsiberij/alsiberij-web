@@ -1,32 +1,19 @@
 package srv
 
 import (
-	"auth/jwt"
 	"regexp"
 	"strings"
 	"time"
 )
 
 type (
-	TestResponse struct {
-		Status bool `json:"status"`
-	}
-
 	LoginRequest struct {
 		Login    string `json:"login"`
 		Password string `json:"password"`
 	}
-	LoginResponse struct {
-		RefreshToken string `json:"refreshToken"`
-	}
 
 	RefreshRequest struct {
 		RefreshToken string `json:"refreshToken"`
-	}
-	RefreshResponse struct {
-		JWT       string `json:"JWT"`
-		ExpiresAt int64  `json:"expiresAt"`
-		IssuedAt  int64  `json:"issuedAt"`
 	}
 
 	CheckEmailRequest struct {
@@ -44,15 +31,11 @@ type (
 		Reason string `json:"reason"`
 		Until  int64  `json:"until"`
 	}
-
-	ValidateJwtResponse struct {
-		JwtClaims jwt.Claims `json:"jwtClaims"`
-	}
 )
 
 var (
-	ValidLogin    = regexp.MustCompile("^[a-z]{6,32}$").MatchString
-	ValidPassword = regexp.MustCompile("^[\\w!@#$%^&*\\-+=]{6,32}$").MatchString
+	ValidLogin    = regexp.MustCompile("^[a-z][a-z\\d]{6,32}$").MatchString
+	ValidPassword = regexp.MustCompile("^[\\w!@#$%^&*\\-+=]{8,32}$").MatchString
 	ValidRefresh  = regexp.MustCompile(RefreshTokenAlphabetRegexp).MatchString
 	ValidEmail    = regexp.MustCompile("^[a-z][a-z\\d-_.]{2,}@[a-z][a-z\\d-]+\\.[a-z][a-z\\d]+$").MatchString
 )

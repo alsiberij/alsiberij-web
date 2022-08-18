@@ -7,21 +7,6 @@ import (
 	"fmt"
 	"github.com/valyala/fasthttp"
 	"strconv"
-	"time"
-)
-
-const (
-	RefreshTokenLength         = uint(1024)
-	RefreshTokenAlphabet       = `<->`
-	RefreshTokenAlphabetRegexp = `^[\<\-\>]+$`
-	RefreshTokenLifeTime       = 24 * time.Hour
-
-	RefreshTokenRevokeTypeCurrent          = "CURRENT"
-	RefreshTokenRevokeTypeAll              = "ALL"
-	RefreshTokenRevokeTypeAllExceptCurrent = "ALL_EXCEPT_CURRENT"
-
-	VerificationCodeLength   = 8
-	VerificationCodeLifetime = 5 * time.Minute
 )
 
 func Test(ctx *fasthttp.RequestCtx) {
@@ -50,9 +35,13 @@ func Login(ctx *fasthttp.RequestCtx) {
 	}
 	defer conn.Release()
 
-	userRep := PostgresAuth.Users(conn)
+	users := PostgresAuth.Users(conn)
+	if err != nil {
+		Set500Error(ctx, err)
+		return
+	}
 
-	userId, exists, err := userRep.IdByCredentials(request.Login, request.Password)
+	userId, exists, err := users.IdByCredentials(request.Login, request.Password)
 	if err != nil {
 		Set500Error(ctx, err)
 		return
@@ -62,9 +51,9 @@ func Login(ctx *fasthttp.RequestCtx) {
 		return
 	}
 
-	banRep := Redis0.Bans()
+	bans := Redis0.Bans()
 
-	ban, exists, err := banRep.Get(userId)
+	ban, exists, err := bans.Get(userId)
 	if err != nil {
 		Set500Error(ctx, err)
 		return
@@ -77,10 +66,15 @@ func Login(ctx *fasthttp.RequestCtx) {
 		return
 	}
 
-	refTokenRep := PostgresAuth.RefreshTokens(conn)
+	refreshToken := Random.String(RefreshTokenLength, RefreshTokenAlphabet)
 
-	refreshToken := utils.GenerateString(RefreshTokenLength, RefreshTokenAlphabet)
-	err = refTokenRep.Create(userId, refreshToken)
+	refTokens := PostgresAuth.RefreshTokens(conn)
+	if err != nil {
+		Set500Error(ctx, err)
+		return
+	}
+
+	err = refTokens.Create(userId, refreshToken)
 	if err != nil {
 		Set500Error(ctx, err)
 		return
@@ -113,9 +107,9 @@ func Refresh(ctx *fasthttp.RequestCtx) {
 	}
 	defer conn.Release()
 
-	refTokenRep := PostgresAuth.RefreshTokens(conn)
+	refTokens := PostgresAuth.RefreshTokens(conn)
 
-	tokenData, exists, err := refTokenRep.ByToken(request.RefreshToken, RefreshTokenLifeTime)
+	tokenData, exists, err := refTokens.ByToken(request.RefreshToken, RefreshTokenExpirationTime)
 	if err != nil {
 		Set500Error(ctx, err)
 		return
@@ -159,15 +153,19 @@ func Revoke(ctx *fasthttp.RequestCtx) {
 
 	revokeType := string(ctx.QueryArgs().Peek("type"))
 
-	refTokenRep := PostgresAuth.RefreshTokens(conn)
+	refTokens := PostgresAuth.RefreshTokens(conn)
+	if err != nil {
+		Set500Error(ctx, err)
+		return
+	}
 
 	switch revokeType {
 	case RefreshTokenRevokeTypeCurrent:
-		_, err = refTokenRep.RevokeToken(request.RefreshToken)
+		_, err = refTokens.RevokeToken(request.RefreshToken)
 	case RefreshTokenRevokeTypeAll:
-		_, err = refTokenRep.RevokeAllTokens(request.RefreshToken)
+		_, err = refTokens.RevokeAllTokens(request.RefreshToken)
 	case RefreshTokenRevokeTypeAllExceptCurrent:
-		_, err = refTokenRep.RevokeAllTokensExceptOne(request.RefreshToken)
+		_, err = refTokens.RevokeAllTokensExceptOne(request.RefreshToken)
 	default:
 		Set400(ctx, InvalidRevokingRefreshTokenType)
 		return
@@ -213,9 +211,10 @@ func CheckEmail(ctx *fasthttp.RequestCtx) {
 		return
 	}
 
-	code := utils.GenerateCode(VerificationCodeLength)
+	code := Random.Code(VerificationCodeLength)
 
 	codes := Redis1.Codes()
+
 	err = codes.Create(request.Email, code, VerificationCodeLifetime)
 	if err != nil {
 		Set500Error(ctx, err)
@@ -237,6 +236,7 @@ func Register(ctx *fasthttp.RequestCtx) {
 	}
 
 	codes := Redis1.Codes()
+
 	code, exists, err := codes.Get(request.Email)
 	if err != nil {
 		Set500Error(ctx, err)
@@ -254,29 +254,23 @@ func Register(ctx *fasthttp.RequestCtx) {
 	}
 	defer conn.Release()
 
-	userRep := PostgresAuth.Users(conn)
+	users := PostgresAuth.Users(conn)
 
-	exists, err = userRep.LoginExists(request.Login)
+	existsLogin, existsEmail, err := users.LoginAndEmailExists(request.Login, request.Email)
 	if err != nil {
 		Set500Error(ctx, err)
 		return
 	}
-	if exists {
+	if existsLogin {
 		Set400(ctx, LoginExistsUserMessage)
 		return
 	}
-
-	exists, err = userRep.EmailExists(request.Email)
-	if err != nil {
-		Set500Error(ctx, err)
-		return
-	}
-	if exists {
+	if existsEmail {
 		Set400(ctx, EmailExistsUserMessage)
 		return
 	}
 
-	err = userRep.Create(request.Email, request.Login, request.Password)
+	err = users.Create(request.Email, request.Login, request.Password)
 	if err != nil {
 		Set500Error(ctx, err)
 		return
@@ -326,9 +320,9 @@ func CreateBan(ctx *fasthttp.RequestCtx) {
 	}
 	defer conn.Release()
 
-	userRep := PostgresAuth.Users(conn)
+	users := PostgresAuth.Users(conn)
 
-	userRole, exists, err := userRep.RoleById(userId)
+	userRole, exists, err := users.RoleById(userId)
 	if err != nil {
 		Set500Error(ctx, err)
 		return
@@ -369,9 +363,9 @@ func CreateBan(ctx *fasthttp.RequestCtx) {
 		return
 	}
 
-	refTokenRep := PostgresAuth.RefreshTokens(conn)
+	refTokens := PostgresAuth.RefreshTokens(conn)
 
-	_, _ = refTokenRep.RevokeAllByUserId(userId)
+	_, _ = refTokens.RevokeAllByUserId(userId)
 }
 
 func DeleteBan(ctx *fasthttp.RequestCtx) {
@@ -389,9 +383,9 @@ func DeleteBan(ctx *fasthttp.RequestCtx) {
 	}
 	defer conn.Release()
 
-	userRep := PostgresAuth.Users(conn)
+	users := PostgresAuth.Users(conn)
 
-	userRole, exists, err := userRep.RoleById(userId)
+	userRole, exists, err := users.RoleById(userId)
 	if err != nil {
 		Set500Error(ctx, err)
 		return

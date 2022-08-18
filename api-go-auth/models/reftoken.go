@@ -6,6 +6,8 @@ import (
 
 type (
 	RefreshToken struct {
+		//REFERENCE STRUCTURE
+
 		Id         int64
 		User       User
 		Token      string

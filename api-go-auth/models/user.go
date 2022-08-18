@@ -4,6 +4,8 @@ import "time"
 
 type (
 	User struct {
+		//REFERENCE STRUCTURE
+
 		Id        int64
 		Email     string
 		Role      string

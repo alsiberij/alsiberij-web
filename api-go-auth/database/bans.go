@@ -21,6 +21,10 @@ type (
 )
 
 func (r *Bans) Create(userId int64, reason string, until int64, byUserId int64) error {
+	if r.conn == nil {
+		return ErrRedisNotInitialized
+	}
+
 	t := time.Now()
 	ban := models.BanDTO{
 		UserId:   userId,
@@ -35,6 +39,10 @@ func (r *Bans) Create(userId int64, reason string, until int64, byUserId int64) 
 }
 
 func (r *Bans) Get(userId int64) (models.BanDTO, bool, error) {
+	if r.conn == nil {
+		return models.BanDTO{}, false, ErrRedisNotInitialized
+	}
+
 	result := r.conn.Get(context.Background(), fmt.Sprintf(BanRedisKey, userId))
 	raw, err := result.Bytes()
 	if err != nil {
@@ -50,5 +58,9 @@ func (r *Bans) Get(userId int64) (models.BanDTO, bool, error) {
 }
 
 func (r *Bans) Delete(userId int64) error {
+	if r.conn == nil {
+		return ErrRedisNotInitialized
+	}
+
 	return r.conn.Del(context.Background(), fmt.Sprintf(BanRedisKey, userId)).Err()
 }

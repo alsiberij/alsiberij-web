@@ -2,7 +2,6 @@ package database
 
 import (
 	"context"
-	"errors"
 	"fmt"
 	"github.com/jackc/pgtype/pgxtype"
 	"github.com/jackc/pgx/v4/pgxpool"
@@ -20,13 +19,8 @@ type (
 	}
 
 	Postgres struct {
-		connPool *pgxpool.Pool
-		isActive bool
+		conn *pgxpool.Pool
 	}
-)
-
-var (
-	ErrPostgresNotInitialized = errors.New("postgres not initialized")
 )
 
 func NewPostgres(config PostgresConfig) (Postgres, error) {
@@ -43,20 +37,17 @@ func NewPostgres(config PostgresConfig) (Postgres, error) {
 		return Postgres{}, err
 	}
 
-	return Postgres{connPool: pool, isActive: true}, nil
+	return Postgres{conn: pool}, nil
 }
 
 func (r *Postgres) AcquireConnection() (*pgxpool.Conn, error) {
-	if !r.isActive {
-		return nil, ErrPostgresNotInitialized
-	}
-	return r.connPool.Acquire(context.Background())
+	return r.conn.Acquire(context.Background())
 }
 
 func (r *Postgres) Users(q pgxtype.Querier) Users {
-	return NewUsers(q)
+	return Users{conn: q}
 }
 
 func (r *Postgres) RefreshTokens(q pgxtype.Querier) RefreshTokens {
-	return NewRefreshTokens(q)
+	return RefreshTokens{conn: q}
 }

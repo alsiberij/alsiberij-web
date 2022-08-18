@@ -13,17 +13,21 @@ type (
 	}
 )
 
-func NewRefreshTokens(conn pgxtype.Querier) RefreshTokens {
-	return RefreshTokens{conn: conn}
-}
-
 func (r *RefreshTokens) Create(userId int64, token string) error {
+	if r.conn == nil {
+		return ErrPostgresNotInitialized
+	}
+
 	_, err := r.conn.Exec(context.Background(), `INSERT INTO refresh_tokens("userId", token) VALUES ($1, $2)`,
 		userId, token)
 	return err
 }
 
 func (r *RefreshTokens) ByToken(token string, lifetime time.Duration) (models.RefreshTokenWithUserData, bool, error) {
+	if r.conn == nil {
+		return models.RefreshTokenWithUserData{}, false, ErrPostgresNotInitialized
+	}
+
 	lifetime = lifetime / time.Second
 	rows, err := r.conn.Query(context.Background(),
 		`SELECT t.id AS "tokenId", u.id AS "userId", u.role AS "userRole"
@@ -49,24 +53,40 @@ func (r *RefreshTokens) ByToken(token string, lifetime time.Duration) (models.Re
 }
 
 func (r *RefreshTokens) RevokeToken(token string) (int64, error) {
+	if r.conn == nil {
+		return 0, ErrPostgresNotInitialized
+	}
+
 	tag, err := r.conn.Exec(context.Background(),
 		`UPDATE refresh_tokens SET "isRevoked" = TRUE WHERE token = $1 AND "isRevoked" IS FALSE`, token)
 	return tag.RowsAffected(), err
 }
 
 func (r *RefreshTokens) RevokeAllTokens(token string) (int64, error) {
+	if r.conn == nil {
+		return 0, ErrPostgresNotInitialized
+	}
+
 	tag, err := r.conn.Exec(context.Background(),
 		`UPDATE refresh_tokens SET "isRevoked" = TRUE WHERE "userId" = (SELECT "userId" FROM refresh_tokens WHERE token = $1) AND "isRevoked" IS FALSE`, token)
 	return tag.RowsAffected(), err
 }
 
 func (r *RefreshTokens) RevokeAllTokensExceptOne(token string) (int64, error) {
+	if r.conn == nil {
+		return 0, ErrPostgresNotInitialized
+	}
+
 	tag, err := r.conn.Exec(context.Background(),
 		`UPDATE refresh_tokens SET "isRevoked" = TRUE WHERE "userId" = (SELECT "userId" FROM refresh_tokens WHERE token = $1) AND token != $1 AND "isRevoked" IS FALSE`, token)
 	return tag.RowsAffected(), err
 }
 
 func (r *RefreshTokens) RevokeAllByUserId(userId int64) (int64, error) {
+	if r.conn == nil {
+		return 0, ErrPostgresNotInitialized
+	}
+
 	tag, err := r.conn.Exec(context.Background(), `UPDATE refresh_tokens SET "isRevoked" = TRUE WHERE "userId" = $1 AND "isRevoked" IS FALSE`, userId)
 	return tag.RowsAffected(), err
 }

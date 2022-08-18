@@ -13,11 +13,11 @@ type (
 	}
 )
 
-func NewUsers(conn pgxtype.Querier) Users {
-	return Users{conn: conn}
-}
-
 func (r *Users) Create(email, login, password string) error {
+	if r.conn == nil {
+		return ErrPostgresNotInitialized
+	}
+
 	h := sha512.New()
 	h.Write([]byte(password))
 	password = hex.EncodeToString(h.Sum(nil))
@@ -28,6 +28,10 @@ func (r *Users) Create(email, login, password string) error {
 }
 
 func (r *Users) IdByCredentials(login, password string) (int64, bool, error) {
+	if r.conn == nil {
+		return 0, false, ErrPostgresNotInitialized
+	}
+
 	h := sha512.New()
 	h.Write([]byte(password))
 	password = hex.EncodeToString(h.Sum(nil))
@@ -49,6 +53,10 @@ func (r *Users) IdByCredentials(login, password string) (int64, bool, error) {
 }
 
 func (r *Users) RoleById(userId int64) (string, bool, error) {
+	if r.conn == nil {
+		return "", false, ErrPostgresNotInitialized
+	}
+
 	row, err := r.conn.Query(context.Background(), `SELECT role FROM users WHERE id = $1`, userId)
 	if err != nil {
 		return "", false, err
@@ -65,15 +73,24 @@ func (r *Users) RoleById(userId int64) (string, bool, error) {
 }
 
 func (r *Users) EmailExists(email string) (bool, error) {
+	if r.conn == nil {
+		return false, ErrPostgresNotInitialized
+	}
+
 	var exists bool
 	err := r.conn.QueryRow(context.Background(), `SELECT EXISTS (SELECT FROM users WHERE email = $1)`, email).
 		Scan(&exists)
 	return exists, err
 }
 
-func (r *Users) LoginExists(login string) (bool, error) {
-	var exists bool
-	err := r.conn.QueryRow(context.Background(), `SELECT EXISTS (SELECT FROM users WHERE login = $1)`, login).
-		Scan(&exists)
-	return exists, err
+func (r *Users) LoginAndEmailExists(login, email string) (bool, bool, error) {
+	if r.conn == nil {
+		return false, false, ErrPostgresNotInitialized
+	}
+
+	var existsLogin, existsEmail bool
+	err := r.conn.QueryRow(context.Background(),
+		`SELECT EXISTS(SELECT FROM users WHERE login = $1), EXISTS(SELECT FROM users WHERE email = $2)`, login, email).
+		Scan(&existsLogin, &existsEmail)
+	return existsLogin, existsEmail, err
 }

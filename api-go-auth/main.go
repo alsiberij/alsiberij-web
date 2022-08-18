@@ -22,6 +22,7 @@ const (
 )
 
 //TODO TESTS
+//TODO STORE REFRESH TOKENS IN REDIS REFRESH_TOKEN_{USER_ID}_{HASH}
 
 func init() {
 	config, err := ReadConfig("config.json")
@@ -112,10 +113,10 @@ func main() {
 		LogAllErrors: true,
 	}
 
-	GracefulServe(&server, lis)
+	RunServer(&server, lis)
 }
 
-func GracefulServe(server *fasthttp.Server, listener net.Listener) {
+func RunServer(server *fasthttp.Server, listener net.Listener) {
 	sigChan := make(chan os.Signal)
 	signal.Notify(sigChan, syscall.SIGINT, syscall.SIGTERM, syscall.SIGKILL)
 
@@ -135,7 +136,7 @@ func GracefulServe(server *fasthttp.Server, listener net.Listener) {
 
 	err = server.Shutdown()
 	if err != nil {
-		log.Printf("ERROR SAVING LOG BUFFER: %v", err)
+		log.Printf("SHUT DOWN ERROR: %v\n", err)
 	}
 
 	err = srv.Logger.Save()

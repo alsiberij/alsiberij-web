@@ -4,7 +4,6 @@ import (
 	"auth/jwt"
 	"auth/logging"
 	"auth/utils"
-	"fmt"
 	"github.com/valyala/fasthttp"
 	"strings"
 	"time"
@@ -43,16 +42,13 @@ func Authorize(h fasthttp.RequestHandler) fasthttp.RequestHandler {
 
 		bans := Redis0.Bans()
 
-		ban, exists, err := bans.Get(claims.Sub)
+		_, exists, err := bans.Get(claims.Sub)
 		if err != nil {
 			Set500Error(ctx, err)
 			return
 		}
 		if exists {
-			userMsg := AccountIsBannedUserMessage
-			userMsg.Message = fmt.Sprintf(
-				userMsg.Message, ban.Reason, ban.ByUserId, ban.At, ban.Until)
-			Set403WithUserMessage(ctx, userMsg)
+			Set403WithUserMessage(ctx, AccountIsBannedUserMessage)
 			return
 		}
 
@@ -84,16 +80,13 @@ func AuthorizeRoles(roles []string) Middleware {
 
 			bans := Redis0.Bans()
 
-			ban, exists, err := bans.Get(claims.Sub)
+			_, exists, err := bans.Get(claims.Sub)
 			if err != nil {
 				Set500Error(ctx, err)
 				return
 			}
 			if exists {
-				userMsg := AccountIsBannedUserMessage
-				userMsg.Message = fmt.Sprintf(
-					userMsg.Message, ban.Reason, ban.ByUserId, ban.At, ban.Until)
-				Set403WithUserMessage(ctx, userMsg)
+				Set403WithUserMessage(ctx, AccountIsBannedUserMessage)
 				return
 			}
 
@@ -110,10 +103,8 @@ func LogMiddleware(h fasthttp.RequestHandler) fasthttp.RequestHandler {
 			Method:    utils.BytesToString(ctx.Request.Header.Method()),
 			Path:      utils.BytesToString(ctx.Path()),
 			Protocol:  utils.BytesToString(ctx.Request.Header.Protocol()),
-			Headers:   make([]string, 0, ctx.Request.Header.Len()),
 			Body:      utils.BytesToString(ctx.Request.Body()),
 		}
-
 		req.Headers = strings.Split(strings.ReplaceAll(ctx.Request.Header.String(), "\r", ""), "\n")[1:]
 
 		t1 := time.Now()
@@ -124,7 +115,6 @@ func LogMiddleware(h fasthttp.RequestHandler) fasthttp.RequestHandler {
 			Timestamp:     time.Now().Unix(),
 			Protocol:      utils.BytesToString(ctx.Response.Header.Protocol()),
 			StatusCode:    ctx.Response.StatusCode(),
-			Headers:       make([]string, 0, ctx.Response.Header.Len()),
 			Body:          utils.BytesToString(ctx.Response.Body()),
 			ExecutionTime: t2.Sub(t1).Milliseconds(),
 		}
