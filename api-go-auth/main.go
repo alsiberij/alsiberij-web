@@ -22,7 +22,6 @@ const (
 )
 
 //TODO TESTS
-//TODO STORE REFRESH TOKENS IN REDIS REFRESH_TOKEN_{USER_ID}_{HASH}
 
 func init() {
 	config, err := ReadConfig("config.json")

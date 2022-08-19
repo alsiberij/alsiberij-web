@@ -9,9 +9,9 @@ import (
 
 const (
 	RefreshTokenLength         = uint(1024)
-	RefreshTokenAlphabet       = `<->`
-	RefreshTokenAlphabetRegexp = `^[\<\-\>]+$`
-	RefreshTokenExpirationTime = 24 * time.Hour
+	RefreshTokenAlphabet       = `1234567890abcdef`
+	RefreshTokenAlphabetRegexp = `^[\da-f]+$`
+	RefreshTokenLifePeriod     = 24 * time.Hour
 
 	RefreshTokenRevokeTypeCurrent          = "CURRENT"
 	RefreshTokenRevokeTypeAll              = "ALL"

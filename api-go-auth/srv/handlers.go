@@ -4,7 +4,6 @@ import (
 	"auth/jwt"
 	"auth/utils"
 	"encoding/json"
-	"fmt"
 	"github.com/valyala/fasthttp"
 	"strconv"
 )
@@ -36,10 +35,6 @@ func Login(ctx *fasthttp.RequestCtx) {
 	defer conn.Release()
 
 	users := PostgresAuth.Users(conn)
-	if err != nil {
-		Set500Error(ctx, err)
-		return
-	}
 
 	userId, exists, err := users.IdByCredentials(request.Login, request.Password)
 	if err != nil {
@@ -53,27 +48,19 @@ func Login(ctx *fasthttp.RequestCtx) {
 
 	bans := Redis0.Bans()
 
-	ban, exists, err := bans.Get(userId)
+	_, exists, err = bans.Get(userId)
 	if err != nil {
 		Set500Error(ctx, err)
 		return
 	}
 	if exists {
-		userMsg := AccountIsBannedUserMessage
-		userMsg.Message = fmt.Sprintf(
-			userMsg.Message, ban.Reason, ban.ByUserId, ban.At, ban.Until)
-		Set403WithUserMessage(ctx, userMsg)
+		Set403WithUserMessage(ctx, AccountIsBannedUserMessage)
 		return
 	}
-
-	refreshToken := Random.String(RefreshTokenLength, RefreshTokenAlphabet)
 
 	refTokens := PostgresAuth.RefreshTokens(conn)
-	if err != nil {
-		Set500Error(ctx, err)
-		return
-	}
 
+	refreshToken := Random.String(RefreshTokenLength, RefreshTokenAlphabet)
 	err = refTokens.Create(userId, refreshToken)
 	if err != nil {
 		Set500Error(ctx, err)
@@ -109,7 +96,7 @@ func Refresh(ctx *fasthttp.RequestCtx) {
 
 	refTokens := PostgresAuth.RefreshTokens(conn)
 
-	tokenData, exists, err := refTokens.ByToken(request.RefreshToken, RefreshTokenExpirationTime)
+	tokenData, exists, err := refTokens.ByToken(request.RefreshToken, RefreshTokenLifePeriod)
 	if err != nil {
 		Set500Error(ctx, err)
 		return
@@ -174,8 +161,6 @@ func Revoke(ctx *fasthttp.RequestCtx) {
 	if err != nil {
 		Set500Error(ctx, err)
 	}
-
-	ctx.SetStatusCode(fasthttp.StatusOK)
 }
 
 func CheckEmail(ctx *fasthttp.RequestCtx) {
@@ -211,14 +196,15 @@ func CheckEmail(ctx *fasthttp.RequestCtx) {
 		return
 	}
 
-	code := Random.Code(VerificationCodeLength)
-
 	codes := Redis1.Codes()
 
+	code := Random.Code(VerificationCodeLength)
 	err = codes.Create(request.Email, code, VerificationCodeLifetime)
 	if err != nil {
 		Set500Error(ctx, err)
 	}
+
+	//TODO SEND EMAIL WITH CODE
 }
 
 func Register(ctx *fasthttp.RequestCtx) {
