@@ -34,7 +34,7 @@ type (
 )
 
 var (
-	ValidLogin    = regexp.MustCompile("^[a-z][a-z\\d]{6,32}$").MatchString
+	ValidLogin    = regexp.MustCompile("^[a-z][a-z\\d]{4,32}$").MatchString
 	ValidPassword = regexp.MustCompile("^[\\w!@#$%^&*\\-+=]{8,32}$").MatchString
 	ValidRefresh  = regexp.MustCompile(RefreshTokenAlphabetRegexp).MatchString
 	ValidEmail    = regexp.MustCompile("^[a-z][a-z\\d-_.]{2,}@[a-z][a-z\\d-]+\\.[a-z][a-z\\d]+$").MatchString

@@ -15,62 +15,62 @@ type (
 	}
 
 	UserMessage struct {
-		Message      string `json:"message"`
+		Content      string `json:"message"`
 		InternalCode int    `json:"internalCode"`
 	}
 )
 
 var (
 	InvalidRequestBodyUserMessage = UserMessage{
-		Message:      "Неверное тело запроса",
+		Content:      "Неверное тело запроса",
 		InternalCode: -1,
 	}
 	InvalidLoginUserMessage = UserMessage{
-		Message:      "Неверный логин",
+		Content:      "Неверный логин",
 		InternalCode: -2,
 	}
 	InvalidPasswordUserMessage = UserMessage{
-		Message:      "Неверный пароль",
+		Content:      "Неверный пароль",
 		InternalCode: -3,
 	}
 	InvalidEmailUserMessage = UserMessage{
-		Message:      "Неправильный email",
+		Content:      "Неправильный email",
 		InternalCode: -4,
 	}
 	InvalidRefreshTokenUserMessage = UserMessage{
-		Message:      "Неверный токен обновления",
+		Content:      "Неверный токен обновления",
 		InternalCode: -5,
 	}
 	InvalidCodeUserMessage = UserMessage{
-		Message:      "Неверный код из письма",
+		Content:      "Неверный код из письма",
 		InternalCode: -6,
 	}
 	LoginExistsUserMessage = UserMessage{
-		Message:      "Пользователь с таким логином уже существует",
+		Content:      "Пользователь с таким логином уже существует",
 		InternalCode: -7,
 	}
 	EmailExistsUserMessage = UserMessage{
-		Message:      "Пользователь с такой почтой уже существует",
+		Content:      "Пользователь с такой почтой уже существует",
 		InternalCode: -8,
 	}
 	AccountIsBannedUserMessage = UserMessage{
-		Message:      "Ваш аккаунт заблокирован",
+		Content:      "Ваш аккаунт заблокирован",
 		InternalCode: -9,
 	}
 	InvalidUserIdUserMessage = UserMessage{
-		Message:      "Неверный идентификатор пользователя",
+		Content:      "Неверный идентификатор пользователя",
 		InternalCode: -10,
 	}
 	InvalidRevokingRefreshTokenType = UserMessage{
-		Message:      "Неверный тип отзыва токена обновления",
+		Content:      "Неверный тип отзыва токена обновления",
 		InternalCode: -11,
 	}
 	InvalidBanReasonMessage = UserMessage{
-		Message:      "Неверная причина блокировки",
+		Content:      "Неверная причина блокировки",
 		InternalCode: -12,
 	}
 	InvalidBanTimeMessage = UserMessage{
-		Message:      "Минимальное время блокировки 5 минут",
+		Content:      "Минимальное время блокировки 5 минут",
 		InternalCode: -13,
 	}
 )
@@ -90,7 +90,7 @@ func Set401(ctx *fasthttp.RequestCtx) {
 		HttpCode: fasthttp.StatusUnauthorized,
 		DevMsg:   "Unauthorized",
 		UsrMsg: UserMessage{
-			Message:      "Не авторизован",
+			Content:      "Не авторизован",
 			InternalCode: 1,
 		},
 	})
@@ -103,7 +103,7 @@ func Set403(ctx *fasthttp.RequestCtx) {
 		HttpCode: fasthttp.StatusForbidden,
 		DevMsg:   "Forbidden",
 		UsrMsg: UserMessage{
-			Message:      "Доступ запрещен",
+			Content:      "Доступ запрещен",
 			InternalCode: 1,
 		},
 	})
@@ -126,7 +126,7 @@ func Set404(ctx *fasthttp.RequestCtx) {
 		HttpCode: fasthttp.StatusNotFound,
 		DevMsg:   "Not found",
 		UsrMsg: UserMessage{
-			Message:      "Не найдено : " + string(ctx.Path()),
+			Content:      "Не найдено : " + string(ctx.Path()),
 			InternalCode: 1,
 		},
 	})
@@ -139,7 +139,7 @@ func Set405(ctx *fasthttp.RequestCtx) {
 		HttpCode: fasthttp.StatusMethodNotAllowed,
 		DevMsg:   "Method not allowed",
 		UsrMsg: UserMessage{
-			Message:      "Метод не поддерживается",
+			Content:      "Метод не поддерживается",
 			InternalCode: 1,
 		},
 	})
@@ -148,7 +148,7 @@ func Set405(ctx *fasthttp.RequestCtx) {
 }
 
 func Set500Error(ctx *fasthttp.RequestCtx, err error) {
-	devMsg := "ERROR : "
+	var devMsg string
 	if err != nil {
 		go Logger.LogError(err, logging.LevelError)
 		devMsg += err.Error()
@@ -160,7 +160,7 @@ func Set500Error(ctx *fasthttp.RequestCtx, err error) {
 		HttpCode: fasthttp.StatusInternalServerError,
 		DevMsg:   devMsg,
 		UsrMsg: UserMessage{
-			Message:      "Внутренняя ошибка сервера",
+			Content:      "Внутренняя ошибка сервера",
 			InternalCode: 2,
 		},
 	})
@@ -169,7 +169,7 @@ func Set500Error(ctx *fasthttp.RequestCtx, err error) {
 }
 
 func Set500Panic(ctx *fasthttp.RequestCtx, i interface{}) {
-	devMsg := "PANIC : "
+	var devMsg string
 
 	switch T := i.(type) {
 	case error:
@@ -177,7 +177,7 @@ func Set500Panic(ctx *fasthttp.RequestCtx, i interface{}) {
 	case string:
 		devMsg += T
 	case nil:
-		devMsg += "nil"
+		devMsg += "Nil"
 	default:
 		devMsg += "Unknown error"
 	}
@@ -188,7 +188,7 @@ func Set500Panic(ctx *fasthttp.RequestCtx, i interface{}) {
 		HttpCode: fasthttp.StatusInternalServerError,
 		DevMsg:   devMsg,
 		UsrMsg: UserMessage{
-			Message:      "Внутренняя ошибка сервера",
+			Content:      "Внутренняя ошибка сервера",
 			InternalCode: 2,
 		},
 	})
