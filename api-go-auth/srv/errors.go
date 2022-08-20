@@ -73,6 +73,10 @@ var (
 		Content:      "Минимальное время блокировки 5 минут",
 		InternalCode: -13,
 	}
+	InvalidRoleUserMessage = UserMessage{
+		Content:      "Неверная роль",
+		InternalCode: -14,
+	}
 )
 
 func Set400(ctx *fasthttp.RequestCtx, userMessage UserMessage) {

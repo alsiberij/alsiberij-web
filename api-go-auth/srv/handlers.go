@@ -2,7 +2,6 @@ package srv
 
 import (
 	"auth/jwt"
-	"auth/utils"
 	"encoding/json"
 	"github.com/valyala/fasthttp"
 	"strconv"
@@ -266,11 +265,7 @@ func Register(ctx *fasthttp.RequestCtx) {
 }
 
 func ValidateJWT(ctx *fasthttp.RequestCtx) {
-	claims, ok := ctx.UserValue(JwtContext).(jwt.Claims)
-	if !ok {
-		Set403(ctx)
-		return
-	}
+	claims, _ := ctx.UserValue(JwtContext).(jwt.Claims)
 
 	_ = json.NewEncoder(ctx).Encode(ValidateJwtResponse{
 		JwtClaims: claims,
@@ -318,25 +313,9 @@ func CreateBan(ctx *fasthttp.RequestCtx) {
 		return
 	}
 
-	jwtToken := ctx.UserValue(JwtContext).(jwt.Claims)
+	jwtToken, _ := ctx.UserValue(JwtContext).(jwt.Claims)
 
-	switch jwtToken.Rol {
-	case jwt.RoleModerator:
-		if !utils.ExistsIn(jwt.CanBeBannedByModerator, userRole) {
-			Set403(ctx)
-			return
-		}
-	case jwt.RoleAdministrator:
-		if !utils.ExistsIn(jwt.CanBeBannedByAdmin, userRole) {
-			Set403(ctx)
-			return
-		}
-	case jwt.RoleCreator:
-		if !utils.ExistsIn(jwt.CanBeBannedByCreator, userRole) {
-			Set403(ctx)
-			return
-		}
-	default:
+	if !jwt.RoleIsHigherThan(jwtToken.Rol, userRole) {
 		Set403(ctx)
 		return
 	}
@@ -381,7 +360,7 @@ func DeleteBan(ctx *fasthttp.RequestCtx) {
 		return
 	}
 
-	jwtToken := ctx.UserValue(JwtContext).(jwt.Claims)
+	jwtToken, _ := ctx.UserValue(JwtContext).(jwt.Claims)
 
 	if jwtToken.Rol == jwt.RoleAdministrator && userRole == jwt.RoleAdministrator {
 		Set403(ctx)
@@ -391,6 +370,59 @@ func DeleteBan(ctx *fasthttp.RequestCtx) {
 	bans := Redis0.Bans()
 
 	err = bans.Delete(userId)
+	if err != nil {
+		Set500Error(ctx, err)
+	}
+}
+
+func ChangeRole(ctx *fasthttp.RequestCtx) {
+	userIdFromRequest := ctx.UserValue("id").(string)
+	userId, err := strconv.ParseInt(userIdFromRequest, 10, 64)
+	if err != nil {
+		Set400(ctx, InvalidUserIdUserMessage)
+		return
+	}
+
+	var request ChangeRoleRequest
+	err = json.Unmarshal(ctx.Request.Body(), &request)
+	if err != nil {
+		Set400(ctx, InvalidRequestBodyUserMessage)
+		return
+	}
+
+	isValid, userMessage := request.Validate()
+	if !isValid {
+		Set400(ctx, userMessage)
+		return
+	}
+
+	conn, err := PostgresAuth.AcquireConnection()
+	if err != nil {
+		Set500Error(ctx, err)
+		return
+	}
+	defer conn.Release()
+
+	users := PostgresAuth.Users(conn)
+
+	userToChangeRole, exists, err := users.RoleById(userId)
+	if err != nil {
+		Set500Error(ctx, err)
+		return
+	}
+	if !exists {
+		Set400(ctx, InvalidUserIdUserMessage)
+		return
+	}
+
+	jwtToken, _ := ctx.UserValue(JwtContext).(jwt.Claims)
+
+	if jwt.RoleIsHigherOrEqualThan(userToChangeRole, jwtToken.Rol) || jwt.RoleIsHigherThan(request.Role, jwtToken.Rol) {
+		Set403(ctx)
+		return
+	}
+
+	err = users.UpdateRoleById(userId, request.Role)
 	if err != nil {
 		Set500Error(ctx, err)
 	}

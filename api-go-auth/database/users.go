@@ -94,3 +94,12 @@ func (r *Users) LoginAndEmailExists(login, email string) (bool, bool, error) {
 		Scan(&existsLogin, &existsEmail)
 	return existsLogin, existsEmail, err
 }
+
+func (r *Users) UpdateRoleById(userId int64, role string) error {
+	if r.conn == nil {
+		return ErrPostgresNotInitialized
+	}
+
+	_, err := r.conn.Exec(context.Background(), `UPDATE users SET role = $1 WHERE id = $2`, role, userId)
+	return err
+}

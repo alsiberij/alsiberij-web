@@ -1,6 +1,8 @@
 package srv
 
 import (
+	"auth/jwt"
+	"auth/utils"
 	"regexp"
 	"strings"
 	"time"
@@ -30,6 +32,10 @@ type (
 	BanRequest struct {
 		Reason string `json:"reason"`
 		Until  int64  `json:"until"`
+	}
+
+	ChangeRoleRequest struct {
+		Role string `json:"role"`
 	}
 )
 
@@ -99,6 +105,14 @@ func (r *BanRequest) Validate() (bool, UserMessage) {
 
 	if time.Unix(r.Until, 0).Before(time.Now().Add(time.Minute * 5)) {
 		return false, InvalidBanTimeMessage
+	}
+
+	return true, UserMessage{}
+}
+
+func (r *ChangeRoleRequest) Validate() (bool, UserMessage) {
+	if !utils.ExistsIn(jwt.AllRoles, r.Role) {
+		return false, InvalidRoleUserMessage
 	}
 
 	return true, UserMessage{}
