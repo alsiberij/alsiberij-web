@@ -16,7 +16,7 @@ const (
 	TokenLifetime = 3600
 
 	RoleCreator        = "CREATOR"
-	RoleAdmin          = "ADMIN"
+	RoleAdministrator  = "ADMINISTRATOR"
 	RoleModerator      = "MODERATOR"
 	RolePrivilegedUser = "PRIVILEGED_USER"
 	RoleUser           = "USER"
@@ -45,7 +45,7 @@ var (
 
 	CanBeBannedByModerator = []string{RoleUser}
 	CanBeBannedByAdmin     = []string{RoleModerator, RolePrivilegedUser, RoleUser}
-	CanBeBannedByCreator   = []string{RoleAdmin, RoleModerator, RolePrivilegedUser, RoleUser}
+	CanBeBannedByCreator   = []string{RoleAdministrator, RoleModerator, RolePrivilegedUser, RoleUser}
 )
 
 func Create(userId int64, role string) (string, int64, int64) {

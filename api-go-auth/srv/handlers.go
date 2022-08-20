@@ -326,7 +326,7 @@ func CreateBan(ctx *fasthttp.RequestCtx) {
 			Set403(ctx)
 			return
 		}
-	case jwt.RoleAdmin:
+	case jwt.RoleAdministrator:
 		if !utils.ExistsIn(jwt.CanBeBannedByAdmin, userRole) {
 			Set403(ctx)
 			return
@@ -383,7 +383,7 @@ func DeleteBan(ctx *fasthttp.RequestCtx) {
 
 	jwtToken := ctx.UserValue(JwtContext).(jwt.Claims)
 
-	if jwtToken.Rol == jwt.RoleAdmin && userRole == jwt.RoleAdmin {
+	if jwtToken.Rol == jwt.RoleAdministrator && userRole == jwt.RoleAdministrator {
 		Set403(ctx)
 		return
 	}

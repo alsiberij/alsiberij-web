@@ -77,9 +77,9 @@ func main() {
 	r.GET(V1+"/validateJWT", srv.WithMiddlewares(srv.ValidateJWT, srv.Authorize))
 
 	r.POST(V1+"/user/{id}/ban", srv.WithMiddlewares(srv.CreateBan,
-		srv.AuthorizeRoles([]string{jwt.RoleCreator, jwt.RoleAdmin, jwt.RoleModerator})))
+		srv.AuthorizeRoles([]string{jwt.RoleCreator, jwt.RoleAdministrator, jwt.RoleModerator})))
 	r.DELETE(V1+"/user/{id}/ban", srv.WithMiddlewares(srv.DeleteBan,
-		srv.AuthorizeRoles([]string{jwt.RoleCreator, jwt.RoleAdmin})))
+		srv.AuthorizeRoles([]string{jwt.RoleCreator, jwt.RoleAdministrator})))
 
 	//TODO REMOVE DEBUG
 	r.GET("/debug/pprof/profile", pprofhandler.PprofHandler)
