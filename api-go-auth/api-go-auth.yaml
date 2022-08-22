@@ -1,0 +1,486 @@
+openapi: 3.0.3
+info:
+  title: "API-GO-AUTH"
+  description: "API endpoints for authorization service"
+  version: "1.0.0"
+servers:
+  - url: 'https://alsiberij.com:11400/'
+paths:
+  /v1/checkEmail:
+    post:
+      tags:
+        - "Authorization"
+      description: "Sends email with verification code that is active for 5 minutes."
+      summary: "Email verification code"
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CheckEmailRequest"
+      responses:
+        200:
+          description: "OK"
+        400:
+          description: "Bad request"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        500:
+          description: "Internal server error"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+
+  /v1/register:
+    post:
+      tags:
+        - "Authorization"
+      description: "Registration"
+      summary: "Sign up"
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/RegisterRequest"
+      responses:
+        204:
+          description: "Created"
+        400:
+          description: "Bad request"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        500:
+          description: "Internal server error"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+
+  /v1/login:
+    post:
+      tags:
+        - "Authorization"
+      description: "Login"
+      summary: "Sign in"
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/LoginRequest"
+      responses:
+        200:
+          description: "OK"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RefreshToken"
+        400:
+          description: "Bad request"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        401:
+          description: "Unauthorized"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        403:
+          description: "Forbidden"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        500:
+          description: "Internal server error"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+
+  /v1/refresh:
+    post:
+      tags:
+        - "Authorization"
+      description: "Uses provided refresh token for creating new JWT."
+      summary: "Retrieve new JWT via refresh token"
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/RefreshToken"
+      responses:
+        200:
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RefreshResponse"
+        400:
+          description: "Bad request"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        500:
+          description: "Internal server error"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+    delete:
+      tags:
+        - "Authorization"
+      description: "Revokes refresh token. Can be used for revoking current token, all tokens except current and all tokens."
+      summary: "Revoke refresh token"
+      parameters:
+        - in: path
+          name: type
+          schema:
+            type: string
+            enum:
+              - CURRENT
+              - ALL_EXCEPT_CURRENT
+              - ALL
+          required: true
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/RefreshToken"
+      responses:
+        200:
+          description: OK
+        400:
+          description: "Bad request"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        500:
+          description: "Internal server error"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+
+  /v1/validateJWT:
+    get:
+      tags:
+        - "Information"
+      description: "Returns data of current JWT"
+      summary: "JWT data"
+      security:
+        - bearerAuth: []
+      responses:
+        200:
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/JWT"
+        400:
+          description: "Bad request"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        401:
+          description: "Unauthorized"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        403:
+          description: "Forbidden"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        500:
+          description: "Internal server error"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+
+  /v1/user/{userId}/ban:
+    post:
+      tags:
+        - "Administration"
+      parameters:
+        - in: path
+          name: userId
+          schema:
+            type: integer
+          required: true
+      description: "Bans user on current service. Any existing refresh tokens will be revoked, retrieving new refresh token will be forbidden. Any existing JWT are considered as invalid. Available for roles: CREATOR, ADMINISTRATOR, MODERATOR. Keep in mind, that user can ban another one only if his role is higher than role of banned one."
+      summary: "Ban user"
+      security:
+        - bearerAuth: [ ]
+      responses:
+        200:
+          description: OK
+        400:
+          description: "Bad request"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        401:
+          description: "Unauthorized"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        403:
+          description: "Forbidden"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        500:
+          description: "Internal server error"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+    delete:
+      tags:
+        - "Administration"
+      parameters:
+        - in: path
+          name: userId
+          schema:
+            type: integer
+          required: true
+      description: "Unbans user on current service.Available for roles: CREATOR, ADMINISTRATOR. Keep in mind, that only CREATOR is able to unban ADMINISTRATOR."
+      summary: "Unban user"
+      security:
+        - bearerAuth: [ ]
+      responses:
+        200:
+          description: OK
+        400:
+          description: "Bad request"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        401:
+          description: "Unauthorized"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        403:
+          description: "Forbidden"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        500:
+          description: "Internal server error"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+
+  /v1/user/{userId}/role:
+    patch:
+      tags:
+        - "Administration"
+      parameters:
+        - in: path
+          name: userId
+          schema:
+            type: integer
+          required: true
+      description: "Changes selected user role. Old role should be less than yours and new role should be lower or equal than yours. Available for roles: CREATOR, ADMINISTRATOR."
+      summary: "Change user role"
+      security:
+        - bearerAuth: [ ]
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Role'
+      responses:
+        200:
+          description: OK
+        400:
+          description: "Bad request"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        401:
+          description: "Unauthorized"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        403:
+          description: "Forbidden"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        500:
+          description: "Internal server error"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+  schemas:
+    Error:
+      type: object
+      properties:
+        statusCode:
+          type: integer
+          example: 400
+        devMsg:
+          type: string
+          example: "Some error"
+        usrMsg:
+          $ref: "#/components/schemas/UserMessage"
+
+    UserMessage:
+      type: object
+      properties:
+        internalCode:
+          type: integer
+          example: -1
+        content:
+          type: string
+          example: "Some error"
+
+    CheckEmailRequest:
+      type: object
+      properties:
+        email:
+          type: string
+          example: "username123@example.com"
+          maxLength: 64
+      required:
+        - email
+
+    RegisterRequest:
+      type: object
+      properties:
+        email:
+          type: string
+          example: "username@example.com"
+          maxLength: 64
+        code:
+          type: string
+          example: "11111111"
+        login:
+          type: string
+          example: "username123"
+          minLength: 5
+          maxLength: 32
+        password:
+          type: string
+          example: "pswd!@#$%^&*-+=123"
+          minLength: 8
+          maxLength: 32
+      required:
+        - email
+        - code
+        - login
+        - password
+
+    LoginRequest:
+      type: object
+      properties:
+        login:
+          type: string
+          example: "username123"
+          minLength: 5
+          maxLength: 32
+        password:
+          type: string
+          example: "pswd!@#$%^&*-+=123"
+          minLength: 8
+          maxLength: 32
+      required:
+        - login
+        - password
+
+    RefreshToken:
+      type: object
+      properties:
+        refreshToken:
+          type: string
+          example: "ee58b577140d1f5b435e29c64837accd1130d6caf68b151c01d2917105e97f6b2e65a4402f0bfc359d0adf757927e015e6a85a3a6b34e755e055f8e5123f458d2c42228544677cfa2c8040507c6565d62064e887b75f8b0ca4d39f6d2e8667e58bb78eea23de5fe9dbc6b74546df7f9ecd131f616fc7d9d0594a80deb7442765f8085439c323e6aa155c9615886853a74cf36d6d6f3ccf7ae3389ef9366d343b81b9849156aad7333d39502da7b30827bb62c2368d0a67233cd86f06d676a9ceb8ec35581f5246932bf05b643152661ae19da37f280e42e59d2d8ce075b7efc0670dad9d7066e95b677aa36df505294d58820873cf54c2bf2795b2e85adc0fbd47ee878cdb396c3488c2846e444f8f626bc4599fec6331b7421de7333f0e58ec3d48fc3f53230a03e02545f6ca3ea031175dcaf2144b2d359f070976c0447242356ac209a5170a56e997c95dbe8a191017f0c8573bb4d80988a6c17c83d8846c035680745980c34a30a95929e99906668988b27915af11350b1aad1ce240807c9707b380d90583b61197dc49a518e410e3d4f6d71128e683c21808cb5bbb2ae84441c4782e677213568a1cad68639ee9081686cb8dc14543553c3ce796a8db46182e4e6b5e6f3cb245bd9b0bdf230b6b601f0599369513a373e43d5ecdd5aed54c977e6d01c3d968970051e49ad2291e216cc9f2830bd287172b3159956f51a1"
+          maxLength: 1024
+          minLength: 1024
+      required:
+        - refreshToken
+
+    RefreshResponse:
+      type: object
+      properties:
+        JWT:
+          type: string
+          example: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOjEsInJvbCI6IlVTRVIiLCJleHAiOjE3MDAwMDM2MDAsImlhdCI6MTcwMDAwMDAwMH0.tZi7QMEzBgFU_UH_5RQ_X7VA6kP7WLzP0yCpw3dc-JE"
+        expiresAt:
+          type: integer
+          example: 1700003600
+        issuedAt:
+          type: integer
+          example: 1700000000
+
+    JWT:
+      type: object
+      properties:
+        jwtClaims:
+          type: object
+          properties:
+            sub:
+              type: integer
+              example: 1
+            rol:
+              type: string
+              enum:
+                - "CREATOR"
+                - "ADMINISTRATOR"
+                - "MODERATOR"
+                - "PRIVILEGED_USER"
+                - "USER"
+              example: "USER"
+            exp:
+              type: integer
+              example: 1700003600
+            iat:
+              type: integer
+              example: 1700000000
+
+    Role:
+      type: object
+      properties:
+        role:
+          type: string
+          enum:
+            - "CREATOR"
+            - "ADMINISTRATOR"
+            - "MODERATOR"
+            - "PRIVILEGED_USER"
+            - "USER"
+          example: "PRIVILEGED_USER"
+
+security:
+  - BearerAuth: []
