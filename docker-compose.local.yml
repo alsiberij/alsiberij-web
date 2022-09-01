@@ -49,7 +49,7 @@ services:
       dockerfile: Dockerfile-API-GO-AUTH
     container_name: api-go-auth
     volumes:
-      - ./api-go-auth/logging/logs:/logs
+      - ./api-go-auth/logs:/logs
     ports:
       - "11400:11400"
     depends_on:
