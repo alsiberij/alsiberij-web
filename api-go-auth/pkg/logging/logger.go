@@ -1,6 +1,7 @@
 package logging
 
 import (
+	"encoding/base64"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -12,8 +13,6 @@ import (
 )
 
 const (
-	logBufferSize = 1_000_000
-
 	LevelFatal logLevel = "FATAL"
 	LevelError logLevel = "ERROR"
 	LevelWarn  logLevel = "WARN"
@@ -29,8 +28,9 @@ type (
 	Logger struct {
 		timeFormat string
 
-		buffer     [logBufferSize]byte
+		buffer     []byte
 		actualSize int
+		maxSize    int
 		bufMx      *sync.RWMutex
 
 		filepath  string
@@ -85,11 +85,12 @@ var (
 	errNoSpace = errors.New("not enough space to write")
 )
 
-func NewLogger(filepath string, fileFlags int, filePerms os.FileMode, timeFormat string) Logger {
+func NewLogger(bufferSize int, filepath string, fileFlags int, filePerms os.FileMode, timeFormat string) Logger {
 	return Logger{
 		timeFormat:  timeFormat,
-		buffer:      [logBufferSize]byte{},
+		buffer:      make([]byte, bufferSize),
 		actualSize:  0,
+		maxSize:     bufferSize,
 		bufMx:       &sync.RWMutex{},
 		filepath:    filepath,
 		fileFlags:   fileFlags,
@@ -103,12 +104,12 @@ func (l *Logger) write(data []byte) error {
 	dataLen := len(data)
 	actualDate := time.Now().Format("2006-01-02")
 
-	if actualDate != l.currentDate || logBufferSize-l.actualSize < dataLen+1 {
+	if actualDate != l.currentDate || l.maxSize-l.actualSize < dataLen+1 {
 		err := l.save(l.currentDate)
 		if err != nil {
 			return err
 		}
-		if logBufferSize-l.actualSize < dataLen {
+		if l.maxSize-l.actualSize < dataLen {
 			return errNoSpace
 		}
 		l.currentDate = actualDate
@@ -172,6 +173,9 @@ func (l *Logger) WriteServerRequest(req Request, res Response) {
 
 	//responseBodyHash := md5.Sum([]byte(res.Body))
 	//res.Body = hex.EncodeToString(responseBodyHash[:])
+
+	req.Body = base64.URLEncoding.EncodeToString([]byte(req.Body))
+	res.Body = base64.URLEncoding.EncodeToString([]byte(res.Body))
 
 	err := l.encodeAndWrite(&ServerRecord{
 		BaseRecord: BaseRecord{

@@ -1,7 +1,7 @@
 package jwt
 
 import (
-	"auth/utils"
+	"auth/pkg/utils"
 	"crypto/hmac"
 	"crypto/sha256"
 	_ "embed"

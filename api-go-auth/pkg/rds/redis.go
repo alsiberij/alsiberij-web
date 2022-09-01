@@ -1,7 +1,8 @@
-package database
+package rds
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"github.com/go-redis/redis/v9"
 )
@@ -18,7 +19,11 @@ type (
 	}
 )
 
-func NewRedis(config RedisConfig) (Redis, error) {
+var (
+	ErrNotInitialized = errors.New("nil cache")
+)
+
+func NewRedis(config RedisConfig) (*Redis, error) {
 	r := Redis{
 		client: redis.NewClient(&redis.Options{
 			Addr:     fmt.Sprintf("%s:%d", config.Host, config.Port),
@@ -28,14 +33,19 @@ func NewRedis(config RedisConfig) (Redis, error) {
 	}
 
 	err := r.client.Ping(context.Background()).Err()
+	if err != nil {
+		return nil, err
+	}
 
-	return r, err
+	return &r, err
 }
 
-func (r *Redis) Bans() Bans {
-	return Bans{conn: r.client}
+func (r *Redis) Client() *redis.Client {
+	return r.client
 }
 
-func (r *Redis) Codes() Codes {
-	return Codes{conn: r.client}
+func (r *Redis) Close() {
+	if r.client != nil {
+		_ = r.Client().Close()
+	}
 }

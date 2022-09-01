@@ -79,7 +79,3 @@ func ExistsIn[T Searchable](haystack []T, needle T) bool {
 func BytesToString(slice []byte) string {
 	return *(*string)(unsafe.Pointer(&slice))
 }
-
-func RunesToString(slice []rune) string {
-	return *(*string)(unsafe.Pointer(&slice))
-}

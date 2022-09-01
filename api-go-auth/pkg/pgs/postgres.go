@@ -1,9 +1,9 @@
-package database
+package pgs
 
 import (
 	"context"
+	"errors"
 	"fmt"
-	"github.com/jackc/pgtype/pgxtype"
 	"github.com/jackc/pgx/v4/pgxpool"
 )
 
@@ -23,31 +23,37 @@ type (
 	}
 )
 
-func NewPostgres(config PostgresConfig) (Postgres, error) {
+var (
+	ErrNotInitialized = errors.New("nil db")
+)
+
+func NewPostgres(config PostgresConfig) (*Postgres, error) {
 	dsn := fmt.Sprintf("postgres://%s:%s@%s:%d/%s?sslmode=%s&pool_max_conns=%d",
 		config.User, config.Password, config.Host, config.Port, config.DbName, config.SslMode, config.MaxCons)
 
 	pool, err := pgxpool.Connect(context.Background(), dsn)
 	if err != nil {
-		return Postgres{}, err
+		return nil, err
 	}
 
 	err = pool.Ping(context.Background())
 	if err != nil {
-		return Postgres{}, err
+		return nil, err
 	}
 
-	return Postgres{conn: pool}, nil
+	return &Postgres{conn: pool}, nil
 }
 
-func (r *Postgres) AcquireConnection() (*pgxpool.Conn, error) {
-	return r.conn.Acquire(context.Background())
+func (r *Postgres) AcquireConnection(ctx context.Context) (*pgxpool.Conn, error) {
+	if r.conn == nil {
+		return nil, ErrNotInitialized
+	}
+
+	return r.conn.Acquire(ctx)
 }
 
-func (r *Postgres) Users(q pgxtype.Querier) Users {
-	return Users{conn: q}
-}
-
-func (r *Postgres) RefreshTokens(q pgxtype.Querier) RefreshTokens {
-	return RefreshTokens{conn: q}
+func (r *Postgres) Close() {
+	if r.conn != nil {
+		r.conn.Close()
+	}
 }
