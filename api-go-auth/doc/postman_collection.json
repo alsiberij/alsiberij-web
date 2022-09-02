@@ -1,0 +1,273 @@
+{
+	"info": {
+		"_postman_id": "e0da5dde-cec1-4d07-9070-2b14794c2bee",
+		"name": "API-GO-AUTH",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+		"_exporter_id": "18920181"
+	},
+	"item": [
+		{
+			"name": "Authorization",
+			"item": [
+				{
+					"name": "Check email",
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\r\n    \"email\": \"user@mail.com\"\r\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{BaseURL}}/v1/checkEmail",
+							"host": [
+								"{{BaseURL}}"
+							],
+							"path": [
+								"v1",
+								"checkEmail"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Register",
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\r\n    \"email\": \"user@mail.com\",\r\n    \"code\": \"11111111\",\r\n    \"login\": \"login\",\r\n    \"password\": \"password\"\r\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{BaseURL}}/v1/register",
+							"host": [
+								"{{BaseURL}}"
+							],
+							"path": [
+								"v1",
+								"register"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Login",
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\r\n    \"login\": \"login\",\r\n    \"password\": \"password\"\r\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{BaseURL}}/v1/login",
+							"host": [
+								"{{BaseURL}}"
+							],
+							"path": [
+								"v1",
+								"login"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Refresh",
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\r\n    \"refreshToken\": \"91b7e81b543e390eea70a49997ce78a646c278a792ad9e39c6a42cf2fd8ba5c6970ab9d25c8ff7aa78ed62f8abb2021fa10a589ba1cb49b79b05bfedab9b90826fbce147d1452d64db333f081b1e3d2a9d3d9d8badd1c9d55370ea188bca4a9983433b3220017fbd4f79f73f171eadc3c0bfe961eb9d522951d3f11c7ced7a0ddbef30dfc1f2762dc7b4029cad99403f7f684400b315976b6b5c31600c7e93f017df7ca96b4d1e7be50de863f729ec01445e9d860d463eef559dcdac11d33d89c16603159aaf284b30ed502f7f49f9e60f19513d201fcb82b83c1aae8c4d300d3e0dea6566eff23a87011218981fa8a6ae72bc3c765b380aedef464d3cf7aa1959b93c36d228f305c9942b68f1daf3fcd981316037da6efae75bea1a8e13a099c27f2e02075f9fd4f247f1d3941c0d4eb0a85e30625418a8a0ce216fb6b0cc42516e5743dad61564d747294f2f654dcb2b4062a6bde3e035c8c6048c9ca01ca225274965e4876df29b35cc8ffd1797380338148d8bb2cfa81c1915438747942281a7ca1dafcbe8e5aa20334010b528a17faae4c719140af3b41775f6f358821b406344ae6fb54b2c9046f2afd84a02caed16fcf038572aaf57c49cac7d08c3717f1f2a012b04f289c9c8e0fce4968fd60a603b19a5c6309afa921a40bc6ce806816531910b2c8ebe602d4d565b604c6b2d1b7c1f00c2db2518f7123dca4a0a54\"\r\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{BaseURL}}/v1/refresh",
+							"host": [
+								"{{BaseURL}}"
+							],
+							"path": [
+								"v1",
+								"refresh"
+							]
+						}
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "Users",
+			"item": [
+				{
+					"name": "Ban",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOjEsInJvbCI6IkNSRUFUT1IiLCJleHAiOjE2NjIxMjgxMzgsImlhdCI6MTY2MjEyNDUzOH0.QGR0VKYtHUvMAG27VMMPf3CzTBijy67IJ0pBuB_Kgt0",
+									"type": "string"
+								}
+							]
+						},
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\r\n    \"reason\": \"some ban reason\",\r\n    \"until\": 1672124538\r\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{BaseURL}}/v1/user/:userId/ban",
+							"host": [
+								"{{BaseURL}}"
+							],
+							"path": [
+								"v1",
+								"user",
+								":userId",
+								"ban"
+							],
+							"variable": [
+								{
+									"key": "userId",
+									"value": "2"
+								}
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Unban",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOjEsInJvbCI6IkNSRUFUT1IiLCJleHAiOjE2NjIxMjgxMzgsImlhdCI6MTY2MjEyNDUzOH0.QGR0VKYtHUvMAG27VMMPf3CzTBijy67IJ0pBuB_Kgt0",
+									"type": "string"
+								}
+							]
+						},
+						"method": "DELETE",
+						"header": [],
+						"url": {
+							"raw": "{{BaseURL}}/v1/user/:userId/ban",
+							"host": [
+								"{{BaseURL}}"
+							],
+							"path": [
+								"v1",
+								"user",
+								":userId",
+								"ban"
+							],
+							"variable": [
+								{
+									"key": "userId",
+									"value": "2"
+								}
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Change role",
+					"request": {
+						"method": "PATCH",
+						"header": []
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "Access token information",
+			"request": {
+				"auth": {
+					"type": "bearer",
+					"bearer": [
+						{
+							"key": "token",
+							"value": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOjEsInJvbCI6IkNSRUFUT1IiLCJleHAiOjE2NjIxMjgxMzgsImlhdCI6MTY2MjEyNDUzOH0.QGR0VKYtHUvMAG27VMMPf3CzTBijy67IJ0pBuB_Kgt0",
+							"type": "string"
+						}
+					]
+				},
+				"method": "GET",
+				"header": [],
+				"url": {
+					"raw": "{{BaseURL}}/v1/me/accessToken",
+					"host": [
+						"{{BaseURL}}"
+					],
+					"path": [
+						"v1",
+						"me",
+						"accessToken"
+					]
+				}
+			},
+			"response": []
+		}
+	],
+	"event": [
+		{
+			"listen": "prerequest",
+			"script": {
+				"type": "text/javascript",
+				"exec": [
+					""
+				]
+			}
+		},
+		{
+			"listen": "test",
+			"script": {
+				"type": "text/javascript",
+				"exec": [
+					""
+				]
+			}
+		}
+	],
+	"variable": [
+		{
+			"key": "BaseURL",
+			"value": "https://127.0.0.1:11400",
+			"type": "string"
+		}
+	]
+}
