@@ -6,7 +6,6 @@ import (
 
 type (
 	RefreshToken struct {
-		Id         int64
 		User       User
 		Token      string
 		IssuedAt   time.Time

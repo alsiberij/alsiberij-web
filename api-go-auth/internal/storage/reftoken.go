@@ -38,7 +38,7 @@ func (r *RefreshTokenStorage) Get(tokenValue string, lifePeriod time.Duration) (
 
 	lifePeriod = lifePeriod / time.Second
 	rows, err := r.conn.Query(context.Background(),
-		`SELECT t.id, u.id, u.email, u.login, u.password, u.role, u."createdAt",
+		`SELECT u.id, u.email, u.login, u.password, u.role, u."createdAt",
        			t.token, t."issuedAt", t."lastUsedAt", t."isRevoked"
 				FROM refresh_tokens AS t JOIN users AS u ON t."userId" = u.id
 				WHERE t.token = $1 AND EXTRACT(EPOCH FROM (CURRENT_TIMESTAMP - t."lastUsedAt")) < $2 AND t."isRevoked" IS FALSE`,
@@ -50,7 +50,7 @@ func (r *RefreshTokenStorage) Get(tokenValue string, lifePeriod time.Duration) (
 	var refreshToken *models.RefreshToken
 	for rows.Next() {
 		refreshToken = &models.RefreshToken{}
-		err = rows.Scan(&refreshToken.Id, &refreshToken.User.Id, &refreshToken.User.Email, &refreshToken.User.Login,
+		err = rows.Scan(&refreshToken.User.Id, &refreshToken.User.Email, &refreshToken.User.Login,
 			&refreshToken.User.Password, &refreshToken.User.Role, &refreshToken.User.CreatedAt, &refreshToken.Token,
 			&refreshToken.IssuedAt, &refreshToken.LastUsedAt, &refreshToken.IsRevoked)
 		if err != nil {
