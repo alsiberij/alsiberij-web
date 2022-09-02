@@ -483,7 +483,7 @@ func (a *application) changeRole(ctx *fasthttp.RequestCtx) {
 		return
 	}
 
-	if requestRole.IsHigher(myRole) {
+	if requestRole.IsHigherOrEqual(myRole) {
 		a.setCustomError(ctx, models.NoPermissionsToSetThisRoleError)
 		return
 	}
