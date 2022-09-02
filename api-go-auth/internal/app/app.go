@@ -68,7 +68,7 @@ func NewApp(serverName string, logger *logging.Logger, pgsPool *pgs.Postgres, rd
 	r.GET(V1+"/me/accessToken", withMiddlewares(app.jwtInfo, app.authorize))
 	r.POST(V1+"/user/{id}/ban", withMiddlewares(app.ban, app.authorizeRoles(models.RoleCreator, models.RoleAdministrator)))
 	r.DELETE(V1+"/user/{id}/ban", withMiddlewares(app.unban, app.authorizeRoles(models.RoleCreator, models.RoleAdministrator)))
-	r.PATCH(V1+"/user/{id}/role", withMiddlewares(app.unban, app.authorizeRoles(models.RoleCreator, models.RoleAdministrator)))
+	r.PATCH(V1+"/user/{id}/role", withMiddlewares(app.changeRole, app.authorizeRoles(models.RoleCreator, models.RoleAdministrator)))
 
 	server := &fasthttp.Server{
 		Handler: app.logMiddleware(r.Handler),
