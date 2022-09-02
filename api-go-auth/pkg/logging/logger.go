@@ -24,6 +24,8 @@ const (
 	LogTypeRequest
 )
 
+//TODO Ticker, simplify writing
+
 type (
 	Logger struct {
 		timeFormat string
