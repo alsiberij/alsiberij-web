@@ -50,6 +50,7 @@ services:
       - "11400:11400"
     depends_on:
       - postgres-1
+      - redis-1
 
   web-php-main:
     build:
