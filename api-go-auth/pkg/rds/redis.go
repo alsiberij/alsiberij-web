@@ -20,7 +20,7 @@ type (
 )
 
 var (
-	ErrNotInitialized = errors.New("nil cache")
+	ErrNotInitialized = errors.New("nil db")
 )
 
 func NewRedis(config RedisConfig) (*Redis, error) {
