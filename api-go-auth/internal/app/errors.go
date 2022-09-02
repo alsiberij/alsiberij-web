@@ -6,6 +6,7 @@ import (
 	"auth/pkg/utils"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"github.com/valyala/fasthttp"
 )
 
@@ -50,6 +51,25 @@ func (a *application) set403(ctx *fasthttp.RequestCtx) {
 		StatusCode:   fasthttp.StatusForbidden,
 		DevMsg:       "Forbidden",
 		UsrMsg:       "Forbidden",
+		InternalCode: 1,
+	})
+	ctx.SetContentType("application/json")
+	ctx.SetStatusCode(fasthttp.StatusForbidden)
+}
+
+func (a *application) set403Banned(ctx *fasthttp.RequestCtx, ban *models.Ban) {
+	var usrMsg string
+	if ban != nil {
+		usrMsg = fmt.Sprintf("Your account was banned (%s - %s) by user #%d by reason: %s",
+			ban.At.Format("15:04 02-01-2006"),
+			ban.Until.Format("15:04 02-01-2006"),
+			ban.ByUserId,
+			ban.Reason)
+	}
+	_ = json.NewEncoder(ctx).Encode(appError{
+		StatusCode:   fasthttp.StatusForbidden,
+		DevMsg:       "Account is banned",
+		UsrMsg:       usrMsg,
 		InternalCode: 1,
 	})
 	ctx.SetContentType("application/json")

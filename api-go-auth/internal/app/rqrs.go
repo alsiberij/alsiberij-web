@@ -100,11 +100,11 @@ func (r *registerRequest) Validate() (*models.Error, error) {
 
 func (r *loginRequest) Validate() (*models.Error, error) {
 	if !validLogin(r.Login) {
-		return models.InvalidLoginError, nil
+		return models.WrongCredentialsError, nil
 	}
 
 	if !validPassword(r.Password) {
-		return models.InvalidPasswordError, nil
+		return models.WrongCredentialsError, nil
 	}
 
 	return nil, nil
@@ -112,7 +112,7 @@ func (r *loginRequest) Validate() (*models.Error, error) {
 
 func (r *refreshRequest) Validate() (*models.Error, error) {
 	if len(r.RefreshToken) != RefreshTokenLength {
-		return models.InvalidRefreshTokenError, nil
+		return models.WrongRefreshTokenError, nil
 	}
 
 	return nil, nil

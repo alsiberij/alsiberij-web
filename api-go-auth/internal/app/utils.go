@@ -26,9 +26,21 @@ func convertError(serviceError *models.Error) appError {
 	}
 
 	var statusCode int
-	switch serviceError {
-	case models.AccountIsBannedError:
+	switch serviceError.InnerCode {
+	case models.WrongCredentials, models.WrongRefreshToken:
+
+		statusCode = fasthttp.StatusUnauthorized
+
+	case models.AccountIsBanned, models.InvalidMyRole,
+		models.NoPermissionToBanUser, models.NoPermissionToUnbanUser,
+		models.NoPermissionsToSetThisRole, models.NoPermissionToChangeUserRole:
+
 		statusCode = fasthttp.StatusForbidden
+
+	case models.WrongUserId:
+
+		statusCode = fasthttp.StatusNotFound
+
 	default:
 		statusCode = fasthttp.StatusBadRequest
 	}

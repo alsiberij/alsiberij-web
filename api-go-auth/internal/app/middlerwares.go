@@ -66,7 +66,7 @@ func (a *application) authorize(handler fasthttp.RequestHandler) fasthttp.Reques
 			return
 		}
 		if ban != nil {
-			a.setCustomError(ctx, models.AccountIsBannedError)
+			a.set403Banned(ctx, ban)
 			return
 		}
 
@@ -93,7 +93,7 @@ func (a *application) authorizeRoles(roles ...models.UserRole) middleware {
 
 			myRole, ok := models.ToRole(claims.Rol)
 			if !ok {
-				a.set403(ctx)
+				a.setCustomError(ctx, models.InvalidMyRoleError)
 				return
 			}
 
@@ -117,7 +117,7 @@ func (a *application) authorizeRoles(roles ...models.UserRole) middleware {
 				return
 			}
 			if ban != nil {
-				a.setCustomError(ctx, models.AccountIsBannedError)
+				a.set403Banned(ctx, ban)
 				return
 			}
 

@@ -7,6 +7,7 @@ import (
 	"auth/pkg/utils"
 	"context"
 	"encoding/json"
+	"errors"
 	"github.com/valyala/fasthttp"
 	"strconv"
 )
@@ -50,6 +51,7 @@ func (a *application) checkEmail(ctx *fasthttp.RequestCtx) {
 	}
 	if exists {
 		a.setCustomError(ctx, models.EmailExistsError)
+		return
 	}
 
 	codes := storage.NewCodeStorage(a.rdsClient1.Client())
@@ -81,13 +83,13 @@ func (a *application) register(ctx *fasthttp.RequestCtx) {
 
 	codes := storage.NewCodeStorage(a.rdsClient1.Client())
 
-	ok, err := codes.Verify(request.Email, request.Code)
+	ok, err := codes.VerifyCode(request.Email, request.Code)
 	if err != nil {
 		a.set500(ctx, err)
 		return
 	}
 	if !ok {
-		a.setCustomError(ctx, models.InvalidCodeError)
+		a.setCustomError(ctx, models.WrongCodeError)
 		return
 	}
 
@@ -152,7 +154,7 @@ func (a *application) login(ctx *fasthttp.RequestCtx) {
 		return
 	}
 	if user == nil {
-		a.setCustomError(ctx, models.InvalidLoginOrPasswordError)
+		a.setCustomError(ctx, models.WrongCredentialsError)
 		return
 	}
 
@@ -164,7 +166,7 @@ func (a *application) login(ctx *fasthttp.RequestCtx) {
 		return
 	}
 	if ban != nil {
-		a.setCustomError(ctx, models.AccountIsBannedError)
+		a.set403Banned(ctx, ban)
 		return
 	}
 
@@ -216,7 +218,7 @@ func (a *application) refresh(ctx *fasthttp.RequestCtx) {
 		return
 	}
 	if refreshToken == nil {
-		a.setCustomError(ctx, models.InvalidRefreshTokenError)
+		a.setCustomError(ctx, models.WrongRefreshTokenError)
 		return
 	}
 
@@ -280,13 +282,12 @@ func (a *application) revoke(ctx *fasthttp.RequestCtx) {
 	if err != nil {
 		a.set500(ctx, err)
 	}
-
 }
 
 func (a *application) jwtInfo(ctx *fasthttp.RequestCtx) {
 	claims, ok := ctx.UserValue(JwtContext).(jwt.Claims)
 	if !ok {
-		a.set403(ctx)
+		a.set500(ctx, errors.New("access token error"))
 		return
 	}
 
@@ -295,7 +296,7 @@ func (a *application) jwtInfo(ctx *fasthttp.RequestCtx) {
 }
 
 func (a *application) ban(ctx *fasthttp.RequestCtx) {
-	userIdFromRequest := ctx.UserValue("id").(string)
+	userIdFromRequest, _ := ctx.UserValue("id").(string)
 	userId, err := strconv.ParseInt(userIdFromRequest, 10, 64)
 	if err != nil {
 		a.set400(ctx)
@@ -334,19 +335,24 @@ func (a *application) ban(ctx *fasthttp.RequestCtx) {
 		return
 	}
 	if user == nil {
-		a.setCustomError(ctx, models.InvalidUserIdError)
+		a.setCustomError(ctx, models.WrongUserIdError)
 		return
 	}
 
-	jwtToken, _ := ctx.UserValue(JwtContext).(jwt.Claims)
+	jwtToken, ok := ctx.UserValue(JwtContext).(jwt.Claims)
+	if !ok {
+		a.set500(ctx, errors.New("access token error"))
+		return
+	}
+
 	myRole, ok := models.ToRole(jwtToken.Rol)
 	if !ok {
-		a.set403(ctx)
+		a.setCustomError(ctx, models.InvalidMyRoleError)
 		return
 	}
 
 	if !myRole.IsHigher(user.Role) {
-		a.set403(ctx)
+		a.setCustomError(ctx, models.NoPermissionToBanUserError)
 		return
 	}
 
@@ -364,7 +370,7 @@ func (a *application) ban(ctx *fasthttp.RequestCtx) {
 }
 
 func (a *application) unban(ctx *fasthttp.RequestCtx) {
-	userIdFromRequest := ctx.UserValue("id").(string)
+	userIdFromRequest, _ := ctx.UserValue("id").(string)
 	userId, err := strconv.ParseInt(userIdFromRequest, 10, 64)
 	if err != nil {
 		a.set400(ctx)
@@ -386,19 +392,24 @@ func (a *application) unban(ctx *fasthttp.RequestCtx) {
 		return
 	}
 	if user == nil {
-		a.setCustomError(ctx, models.InvalidUserIdError)
+		a.setCustomError(ctx, models.WrongUserIdError)
 		return
 	}
 
-	jwtToken, _ := ctx.UserValue(JwtContext).(jwt.Claims)
+	jwtToken, ok := ctx.UserValue(JwtContext).(jwt.Claims)
+	if !ok {
+		a.set500(ctx, errors.New("access token error"))
+		return
+	}
+
 	myRole, ok := models.ToRole(jwtToken.Rol)
 	if !ok {
-		a.set403(ctx)
+		a.setCustomError(ctx, models.InvalidMyRoleError)
 		return
 	}
 
 	if !myRole.IsHigher(user.Role) {
-		a.setCustomError(ctx, models.InvalidUserIdNoPermission)
+		a.setCustomError(ctx, models.NoPermissionToUnbanUserError)
 		return
 	}
 
@@ -411,7 +422,7 @@ func (a *application) unban(ctx *fasthttp.RequestCtx) {
 }
 
 func (a *application) changeRole(ctx *fasthttp.RequestCtx) {
-	userIdFromRequest := ctx.UserValue("id").(string)
+	userIdFromRequest, _ := ctx.UserValue("id").(string)
 	userId, err := strconv.ParseInt(userIdFromRequest, 10, 64)
 	if err != nil {
 		a.set400(ctx)
@@ -450,16 +461,35 @@ func (a *application) changeRole(ctx *fasthttp.RequestCtx) {
 		return
 	}
 	if user == nil {
-		a.setCustomError(ctx, models.InvalidUserIdError)
+		a.setCustomError(ctx, models.WrongUserIdError)
 		return
 	}
 
-	jwtToken, _ := ctx.UserValue(JwtContext).(jwt.Claims)
-	myRole, _ := models.ToRole(jwtToken.Rol)
-	requestRole, _ := models.ToRole(request.Role)
+	jwtToken, ok := ctx.UserValue(JwtContext).(jwt.Claims)
+	if !ok {
+		a.set500(ctx, errors.New("access token error"))
+		return
+	}
 
-	if requestRole.IsHigher(myRole) || user.Role.IsHigherOrEqual(myRole) {
-		a.set403(ctx)
+	myRole, ok := models.ToRole(jwtToken.Rol)
+	if !ok {
+		a.setCustomError(ctx, models.InvalidMyRoleError)
+		return
+	}
+
+	requestRole, ok := models.ToRole(request.Role)
+	if !ok {
+		a.setCustomError(ctx, models.InvalidRoleError)
+		return
+	}
+
+	if requestRole.IsHigher(myRole) {
+		a.setCustomError(ctx, models.NoPermissionsToSetThisRoleError)
+		return
+	}
+
+	if user.Role.IsHigherOrEqual(myRole) {
+		a.setCustomError(ctx, models.NoPermissionToChangeUserRoleError)
 		return
 	}
 

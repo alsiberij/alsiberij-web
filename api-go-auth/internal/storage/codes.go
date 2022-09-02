@@ -34,7 +34,7 @@ func (r *CodeStorage) CreateAndStore(email, code string, lifetime time.Duration)
 	return r.conn.Set(context.Background(), fmt.Sprintf(VerificationCodeRedisKey, email), code, lifetime).Err()
 }
 
-func (r *CodeStorage) Verify(email, code string) (bool, error) {
+func (r *CodeStorage) VerifyCode(email, code string) (bool, error) {
 	if r.conn == nil {
 		return false, rds.ErrNotInitialized
 	}
