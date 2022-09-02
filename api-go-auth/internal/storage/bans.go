@@ -11,6 +11,8 @@ import (
 	"time"
 )
 
+//TODO context
+
 const (
 	BanRedisKey = "BAN_AUTH_%d"
 )

@@ -9,6 +9,8 @@ import (
 	"github.com/jackc/pgtype/pgxtype"
 )
 
+//TODO context
+
 type (
 	UserStorage struct {
 		conn pgxtype.Querier
