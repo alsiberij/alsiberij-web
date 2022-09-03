@@ -15,7 +15,7 @@ services:
       - web-php-main
       - api-go-auth
 
-  postgres1:
+  postgres-1:
     build:
       context: .
       dockerfile: Dockerfile-POSTGRES-1
