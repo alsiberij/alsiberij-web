@@ -20,6 +20,11 @@ services:
       context: .
       dockerfile: Dockerfile-POSTGRES-1
     container_name: pgs-1
+    env_file:
+      - .env
+    environment:
+      - POSTGRES_PASSWORD=$PGS1_PASS
+      - POSTGRES_DB=$PGS1_DB_NAME
     volumes:
       - ./postgres-1/data:/var/lib/postgresql/data
 
@@ -28,12 +33,18 @@ services:
       context: .
       dockerfile: Dockerfile-MIGRATE
     container_name: mgt
+    command:
+      - "-up"
 
   redis-1:
     build:
       context: .
       dockerfile: Dockerfile-REDIS-1
     container_name: rds-1
+    env_file:
+      - .env
+    command:
+      - "--requirepass $RDS1_PASS"
     volumes:
       - ./redis-1/data:/data
 
