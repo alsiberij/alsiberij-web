@@ -35,6 +35,8 @@ services:
       context: .
       dockerfile: Dockerfile-MIGRATE
     container_name: mgt
+    command:
+      - "-up"
 
   redis-1:
     build:

@@ -1,14 +1,20 @@
-FROM golang:1.18
+FROM golang:1.18 AS builder
 
-COPY ./migrate/migrations /migrations/
+WORKDIR /app
 
-RUN go install -tags 'postgres' github.com/golang-migrate/migrate/v4/cmd/migrate@latest
+COPY migrate .
+RUN go mod tidy
+RUN go mod download
 
-COPY ./migrate/start.sh /start.sh
-RUN chmod +x /start.sh
+RUN CGO_ENABLED=0 GOOS=linux go build -a -o app .
 
-ENV PG_AUTH_DB "als_db"
-ENV PG_AUTH_HOST "pgs-1"
-ENV PG_AUTH_PORT 5432
+FROM scratch
 
-ENTRYPOINT ["/start.sh"]
+COPY --from=builder /etc/ssl/certs/ca-certificates.crt /etc/ssl/certs/
+COPY --from=builder /app/app /bin/app
+
+COPY migrate/config.example.json /config.json
+
+COPY api-go-auth/migrations /migrations/api-go-auth/
+
+ENTRYPOINT ["/bin/app"]
