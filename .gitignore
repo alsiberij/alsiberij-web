@@ -1,3 +1,4 @@
 .idea
 _ssl/*
 !_ssl/.gitkeep
+.env
