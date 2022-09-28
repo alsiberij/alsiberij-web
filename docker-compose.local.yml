@@ -43,9 +43,10 @@ services:
       context: .
       dockerfile: Dockerfile-REDIS-1
     container_name: rds-1
-    entrypoint: [ "redis-server", "/redis.conf", "--requirepass $RDS1_PASS" ]
     env_file:
       - .env
+    command:
+      - "--requirepass $RDS1_PASS"
     volumes:
       - ./redis-1/data:/data
     ports:
