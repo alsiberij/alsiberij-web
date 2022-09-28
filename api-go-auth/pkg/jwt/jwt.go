@@ -38,6 +38,7 @@ var (
 	errorExpired          = errors.New("JWT expired")
 )
 
+// Create generates a valid JWT. Returns JWT string, expiration timestamp and issue timestamp
 func Create(userId int64, role string) (string, int64, int64) {
 	header := Header{
 		Alg: "HS256",
@@ -80,6 +81,7 @@ func Create(userId int64, role string) (string, int64, int64) {
 		issueTime
 }
 
+// Parse tries to parse jwt string and returns its header and claims
 func Parse(jwt string) (Header, Claims, error) {
 	jwtParts := strings.Split(jwt, ".")
 	if len(jwtParts) != 3 {
