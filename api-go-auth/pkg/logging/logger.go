@@ -5,7 +5,6 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"log"
 	"os"
 	"sync"
 	"time"
@@ -83,7 +82,7 @@ type (
 )
 
 var (
-	errNoSpace = errors.New("not enough space to write")
+	ErrNoSpace = errors.New("not enough space to write")
 )
 
 func NewLogger(bufferSize int, filepath string, fileFlags int, filePerms os.FileMode, timeFormat string) Logger {
@@ -114,7 +113,7 @@ func (l *Logger) write(data []byte) error {
 			return err
 		}
 		if l.maxSize-l.actualSize < dataLen {
-			return errNoSpace
+			return ErrNoSpace
 		}
 		l.currentDate = actualDate
 	}
@@ -126,15 +125,6 @@ func (l *Logger) write(data []byte) error {
 	l.actualSize += dataLen + 1
 
 	return nil
-}
-
-func (l *Logger) encodeAndWrite(data interface{}) error {
-	content, err := json.Marshal(data)
-	if err != nil {
-		return err
-	}
-
-	return l.write(content)
 }
 
 func (l *Logger) save(date string) error {
@@ -164,7 +154,7 @@ func (l *Logger) Save() error {
 	return l.save(time.Now().Format("2006-01-02"))
 }
 
-func (l *Logger) WriteServerRequest(req Request, res Response) {
+func (l *Logger) WriteServerRequest(req Request, res Response) error {
 	//TODO Hash bodies
 
 	//requestBodyHash := md5.Sum([]byte(req.Body))
@@ -176,7 +166,7 @@ func (l *Logger) WriteServerRequest(req Request, res Response) {
 	req.Body = base64.URLEncoding.EncodeToString([]byte(req.Body))
 	res.Body = base64.URLEncoding.EncodeToString([]byte(res.Body))
 
-	err := l.encodeAndWrite(&ServerRecord{
+	record := &ServerRecord{
 		BaseRecord: BaseRecord{
 			Timestamp: time.Now().Format(l.timeFormat),
 			Level:     string(LevelInfo),
@@ -186,28 +176,26 @@ func (l *Logger) WriteServerRequest(req Request, res Response) {
 			Request:  &req,
 			Response: &res,
 		},
-	})
-
-	if err != nil {
-		log.Printf("ERROR LOGGING REQUEST: %v\n", err)
 	}
+	content, _ := json.Marshal(record)
+
+	return l.write(content)
 }
 
-func (l *Logger) LogError(err error, level logLevel) {
+func (l *Logger) LogError(err error, level logLevel) error {
 	if err == nil {
-		return
+		return nil
 	}
 
-	err = l.encodeAndWrite(&ErrorsRecord{
+	record := &ErrorsRecord{
 		BaseRecord: BaseRecord{
 			Timestamp: time.Now().Format(l.timeFormat),
 			Level:     string(level),
 			Type:      LogTypeError,
 		},
 		Content: err.Error(),
-	})
-
-	if err != nil {
-		log.Printf("ERROR LOGGING REQUEST: %v\n", err)
 	}
+	content, _ := json.Marshal(record)
+
+	return l.write(content)
 }
