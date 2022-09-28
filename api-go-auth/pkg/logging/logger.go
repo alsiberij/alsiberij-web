@@ -5,7 +5,6 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"io"
 	"log"
 	"os"
 	"sync"
@@ -24,7 +23,7 @@ const (
 	LogTypeRequest
 )
 
-//TODO Ticker, simplify writing
+//TODO Ticker, simplify writing, remove date, input chan
 
 type (
 	Logger struct {
@@ -33,7 +32,7 @@ type (
 		buffer     []byte
 		actualSize int
 		maxSize    int
-		bufMx      *sync.RWMutex
+		bufMx      *sync.Mutex
 
 		filepath  string
 		fileFlags int
@@ -93,7 +92,7 @@ func NewLogger(bufferSize int, filepath string, fileFlags int, filePerms os.File
 		buffer:      make([]byte, bufferSize),
 		actualSize:  0,
 		maxSize:     bufferSize,
-		bufMx:       &sync.RWMutex{},
+		bufMx:       &sync.Mutex{},
 		filepath:    filepath,
 		fileFlags:   fileFlags,
 		filePerms:   filePerms,
@@ -106,6 +105,9 @@ func (l *Logger) write(data []byte) error {
 	dataLen := len(data)
 	actualDate := time.Now().Format("2006-01-02")
 
+	l.bufMx.Lock()
+	defer l.bufMx.Unlock()
+
 	if actualDate != l.currentDate || l.maxSize-l.actualSize < dataLen+1 {
 		err := l.save(l.currentDate)
 		if err != nil {
@@ -117,9 +119,6 @@ func (l *Logger) write(data []byte) error {
 		l.currentDate = actualDate
 	}
 
-	l.bufMx.Lock()
-	defer l.bufMx.Unlock()
-
 	for i := 0; i < dataLen; i++ {
 		l.buffer[l.actualSize+i] = data[i]
 	}
@@ -127,18 +126,6 @@ func (l *Logger) write(data []byte) error {
 	l.actualSize += dataLen + 1
 
 	return nil
-}
-
-func (l *Logger) move(w io.Writer) error {
-	l.bufMx.RLock()
-	defer l.bufMx.RUnlock()
-
-	if l.actualSize == 0 {
-		return nil
-	}
-	_, err := w.Write(l.buffer[:l.actualSize])
-	l.actualSize = 0
-	return err
 }
 
 func (l *Logger) encodeAndWrite(data interface{}) error {
@@ -151,6 +138,10 @@ func (l *Logger) encodeAndWrite(data interface{}) error {
 }
 
 func (l *Logger) save(date string) error {
+	if l.actualSize == 0 {
+		return nil
+	}
+
 	l.fileMx.Lock()
 	defer l.fileMx.Unlock()
 
@@ -158,12 +149,18 @@ func (l *Logger) save(date string) error {
 	if err != nil {
 		return err
 	}
-	err = l.move(f)
+	_, err = f.Write(l.buffer[:l.actualSize])
+	if err == nil {
+		l.actualSize = 0
+	}
 	_ = f.Close()
 	return err
 }
 
 func (l *Logger) Save() error {
+	l.bufMx.Lock()
+	defer l.bufMx.Unlock()
+
 	return l.save(time.Now().Format("2006-01-02"))
 }
 
