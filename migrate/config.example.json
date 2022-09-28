@@ -1,10 +1,10 @@
 {
   "pgs-1/auth": {
-    "user": "als_auth",
-    "password": "als_auth",
+    "user": "USERNAME",
+    "password": "PASSWORD",
     "host": "pgs-1",
     "port": 5432,
-    "dbName": "als_db",
+    "dbName": "DBNAME",
     "sslMode": "disable",
     "maxCons": 16
   }
