@@ -20,6 +20,11 @@ services:
       context: .
       dockerfile: Dockerfile-POSTGRES-1
     container_name: pgs-1
+    env_file:
+      - .env
+    environment:
+      - POSTGRES_PASSWORD=$PGS1_PASS
+      - POSTGRES_DB=$PGS1_DB_NAME
     volumes:
       - ./postgres-1/data:/var/lib/postgresql/data
     ports:
@@ -36,6 +41,9 @@ services:
       context: .
       dockerfile: Dockerfile-REDIS-1
     container_name: rds-1
+    entrypoint: [ "redis-server", "/redis.conf", "--requirepass $RDS1_PASS" ]
+    env_file:
+      - .env
     volumes:
       - ./redis-1/data:/data
     ports:

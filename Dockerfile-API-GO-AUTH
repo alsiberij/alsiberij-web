@@ -13,15 +13,13 @@ FROM scratch
 COPY --from=builder /etc/ssl/certs/ca-certificates.crt /etc/ssl/certs/
 COPY --from=builder /app/app /bin/app
 
-COPY ./api-go-auth/config.example.json /config.json
+COPY api-go-auth/config.example.json /config.json
 
-COPY ./_ssl /bin/ssl
+COPY _ssl /bin/ssl
+
 ENV SSL_PATH "/bin/ssl"
-
 ENV LOGS_PATH "/logs"
 
-ENV PORT 11400
-
-EXPOSE $PORT
+EXPOSE 11400
 
 ENTRYPOINT ["/bin/app"]
