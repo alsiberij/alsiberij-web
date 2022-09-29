@@ -1,6 +1,7 @@
 package logging
 
 import (
+	"encoding/base64"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -170,8 +171,8 @@ func (l *Logger) WriteServerRequest(req Request, res Response) error {
 	//responseBodyHash := md5.Sum([]byte(res.Body))
 	//res.Body = hex.EncodeToString(responseBodyHash[:])
 
-	//req.Body = base64.URLEncoding.EncodeToString([]byte(req.Body))
-	//res.Body = base64.URLEncoding.EncodeToString([]byte(res.Body))
+	req.Body = base64.URLEncoding.EncodeToString([]byte(req.Body))
+	res.Body = base64.URLEncoding.EncodeToString([]byte(res.Body))
 
 	record := &ServerRecord{
 		BaseRecord: BaseRecord{
