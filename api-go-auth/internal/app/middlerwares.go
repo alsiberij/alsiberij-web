@@ -7,6 +7,7 @@ import (
 	"auth/pkg/logging"
 	"auth/pkg/utils"
 	"github.com/valyala/fasthttp"
+	"log"
 	"strings"
 	"time"
 )
@@ -39,7 +40,10 @@ func (a *application) logMiddleware(handler fasthttp.RequestHandler) fasthttp.Re
 		}
 		res.Headers = strings.Split(strings.Trim(ctx.Response.Header.String(), "\r\n"), "\r\n")[1:]
 
-		go a.logger.WriteServerRequest(req, res)
+		err := a.logger.WriteServerRequest(req, res)
+		if err != nil {
+			log.Printf("LOG ERROR: %v\n", err)
+		}
 	}
 }
 

@@ -8,11 +8,7 @@ import (
 	"crypto/tls"
 	"log"
 	"os"
-)
-
-const (
-	LogBufferSize = 1_000_000
-	ServerName    = "API-GO-AUTH"
+	"time"
 )
 
 func main() {
@@ -44,8 +40,8 @@ func main() {
 		logsPath = "./logs"
 	}
 
-	l := logging.NewLogger(LogBufferSize, logsPath+"/logs-%s.log",
-		os.O_CREATE|os.O_WRONLY|os.O_APPEND, 0777, "2006-01-02T15:04:05")
+	l := logging.NewLogger(1_000_000, logsPath+"/logs-%s.log",
+		os.O_CREATE|os.O_WRONLY|os.O_APPEND, 0777, "2006-01-02T15:04:05", time.Second*15)
 
 	port := os.Getenv("PORT")
 	if port == "" {
@@ -68,7 +64,7 @@ func main() {
 		log.Fatalf("LISTENER ERROR: %v", err)
 	}
 
-	srv, err := app.NewApp(ServerName, &l, pgsAuth, rds0, rds1, lis)
+	srv, err := app.NewApp("API-GO-AUTH", l, pgsAuth, rds0, rds1, lis)
 	if err != nil {
 		log.Fatalf("APP ERROR: %v", err)
 	}

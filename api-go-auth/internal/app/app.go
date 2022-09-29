@@ -109,7 +109,7 @@ func (a *application) Serve() {
 		log.Printf("SHUT DOWN ERROR: %v\n", err)
 	}
 
-	err = a.logger.Save()
+	err = a.logger.Close()
 	if err != nil {
 		log.Printf("ERROR SAVING LOG BUFFER: %v\n", err)
 	}

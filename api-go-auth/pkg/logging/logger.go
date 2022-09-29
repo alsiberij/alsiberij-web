@@ -1,7 +1,6 @@
 package logging
 
 import (
-	"encoding/base64"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -11,37 +10,21 @@ import (
 )
 
 const (
+	DefaultBufferSize      = 1_000_000
+	DefaultFilenamePattern = "logs-%s.log"
+	DefaultFlags           = os.O_CREATE | os.O_WRONLY | os.O_APPEND
+	DefaultPerms           = 0777
+	DefaultTimeFormat      = "2006-01-02T15:04:05"
+	DefaultSaveInterval    = time.Second * 3
+
 	LevelFatal logLevel = "FATAL"
 	LevelError logLevel = "ERROR"
-	LevelWarn  logLevel = "WARN"
 	LevelInfo  logLevel = "INFO"
 )
 
 const (
 	LogTypeError = iota
 	LogTypeRequest
-)
-
-//TODO Ticker, simplify writing, remove date, input chan
-
-type (
-	Logger struct {
-		timeFormat string
-
-		buffer     []byte
-		actualSize int
-		maxSize    int
-		bufMx      *sync.Mutex
-
-		filepath  string
-		fileFlags int
-		filePerms os.FileMode
-		fileMx    *sync.Mutex
-
-		currentDate string
-	}
-
-	logLevel string
 )
 
 type (
@@ -81,31 +64,62 @@ type (
 	}
 )
 
-var (
-	ErrNoSpace = errors.New("not enough space to write")
+type (
+	Logger struct {
+		timeFormat  string
+		currentDate string
+
+		saveInterval time.Duration
+
+		buffer     []byte
+		actualSize int
+		maxSize    int
+
+		filenamePattern string
+		fileFlags       int
+		filePerms       os.FileMode
+
+		inputCh chan []byte
+		errCh   chan error
+
+		wg *sync.WaitGroup
+	}
+
+	logLevel string
 )
 
-func NewLogger(bufferSize int, filepath string, fileFlags int, filePerms os.FileMode, timeFormat string) Logger {
-	return Logger{
-		timeFormat:  timeFormat,
-		buffer:      make([]byte, bufferSize),
-		actualSize:  0,
-		maxSize:     bufferSize,
-		bufMx:       &sync.Mutex{},
-		filepath:    filepath,
-		fileFlags:   fileFlags,
-		filePerms:   filePerms,
-		fileMx:      &sync.Mutex{},
-		currentDate: time.Now().Format("2006-01-02"),
+var (
+	ErrNoSpace = errors.New("not enough space to write")
+	ErrClosed  = errors.New("logger closed")
+)
+
+func NewLogger(bufferSize int, filepath string, fileFlags int, filePerms os.FileMode, timeFormat string, saveInterval time.Duration) *Logger {
+	l := &Logger{
+		timeFormat:      timeFormat,
+		saveInterval:    saveInterval,
+		buffer:          make([]byte, bufferSize),
+		actualSize:      0,
+		maxSize:         bufferSize,
+		filenamePattern: filepath,
+		fileFlags:       fileFlags,
+		filePerms:       filePerms,
+		currentDate:     time.Now().Format("2006-01-02"),
+		inputCh:         make(chan []byte),
+		errCh:           make(chan error),
+		wg:              &sync.WaitGroup{},
 	}
+
+	go l.logWorker()
+
+	return l
 }
 
 func (l *Logger) write(data []byte) error {
+	l.wg.Add(1)
+	defer l.wg.Done()
+
 	dataLen := len(data)
 	actualDate := time.Now().Format("2006-01-02")
-
-	l.bufMx.Lock()
-	defer l.bufMx.Unlock()
 
 	if actualDate != l.currentDate || l.maxSize-l.actualSize < dataLen+1 {
 		err := l.save(l.currentDate)
@@ -128,14 +142,14 @@ func (l *Logger) write(data []byte) error {
 }
 
 func (l *Logger) save(date string) error {
+	l.wg.Add(1)
+	defer l.wg.Done()
+
 	if l.actualSize == 0 {
 		return nil
 	}
 
-	l.fileMx.Lock()
-	defer l.fileMx.Unlock()
-
-	f, err := os.OpenFile(fmt.Sprintf(l.filepath, date), l.fileFlags, l.filePerms)
+	f, err := os.OpenFile(fmt.Sprintf(l.filenamePattern, date), l.fileFlags, l.filePerms)
 	if err != nil {
 		return err
 	}
@@ -147,13 +161,6 @@ func (l *Logger) save(date string) error {
 	return err
 }
 
-func (l *Logger) Save() error {
-	l.bufMx.Lock()
-	defer l.bufMx.Unlock()
-
-	return l.save(time.Now().Format("2006-01-02"))
-}
-
 func (l *Logger) WriteServerRequest(req Request, res Response) error {
 	//TODO Hash bodies
 
@@ -163,8 +170,8 @@ func (l *Logger) WriteServerRequest(req Request, res Response) error {
 	//responseBodyHash := md5.Sum([]byte(res.Body))
 	//res.Body = hex.EncodeToString(responseBodyHash[:])
 
-	req.Body = base64.URLEncoding.EncodeToString([]byte(req.Body))
-	res.Body = base64.URLEncoding.EncodeToString([]byte(res.Body))
+	//req.Body = base64.URLEncoding.EncodeToString([]byte(req.Body))
+	//res.Body = base64.URLEncoding.EncodeToString([]byte(res.Body))
 
 	record := &ServerRecord{
 		BaseRecord: BaseRecord{
@@ -179,14 +186,11 @@ func (l *Logger) WriteServerRequest(req Request, res Response) error {
 	}
 	content, _ := json.Marshal(record)
 
-	return l.write(content)
+	l.inputCh <- content
+	return <-l.errCh
 }
 
-func (l *Logger) LogError(err error, level logLevel) error {
-	if err == nil {
-		return nil
-	}
-
+func (l *Logger) WriteError(err error, level logLevel) error {
 	record := &ErrorsRecord{
 		BaseRecord: BaseRecord{
 			Timestamp: time.Now().Format(l.timeFormat),
@@ -197,5 +201,37 @@ func (l *Logger) LogError(err error, level logLevel) error {
 	}
 	content, _ := json.Marshal(record)
 
-	return l.write(content)
+	l.inputCh <- content
+
+	err, ok := <-l.errCh
+	if !ok {
+		err = ErrClosed
+	}
+
+	return err
+}
+
+func (l *Logger) Close() error {
+	l.wg.Wait()
+	close(l.inputCh)
+	return l.save(time.Now().Format("2006-01-02"))
+}
+
+func (l *Logger) logWorker() {
+	defer close(l.errCh)
+
+	for {
+		select {
+		case data, ok := <-l.inputCh:
+			if !ok {
+				return
+			}
+			l.errCh <- l.write(data)
+		case <-time.After(l.saveInterval):
+			err := l.save(time.Now().Format("2006-01-02"))
+			if err != nil {
+				return
+			}
+		}
+	}
 }

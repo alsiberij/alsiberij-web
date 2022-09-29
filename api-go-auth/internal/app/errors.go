@@ -8,6 +8,7 @@ import (
 	"errors"
 	"fmt"
 	"github.com/valyala/fasthttp"
+	"log"
 )
 
 type (
@@ -101,7 +102,10 @@ func (a *application) set405(ctx *fasthttp.RequestCtx) {
 func (a *application) set500(ctx *fasthttp.RequestCtx, err error) {
 	var devMsg string
 	if err != nil {
-		go a.logger.LogError(err, logging.LevelError)
+		logErr := a.logger.WriteError(err, logging.LevelError)
+		if logErr != nil {
+			log.Printf("LOG ERROR: %v\n", logErr)
+		}
 		devMsg += err.Error()
 	} else {
 		devMsg += "Empty error"
@@ -131,7 +135,10 @@ func (a *application) set500Fatal(ctx *fasthttp.RequestCtx, i interface{}) {
 		devMsg += "Unknown fatal error"
 	}
 
-	go a.logger.LogError(errors.New(devMsg), logging.LevelFatal)
+	err := a.logger.WriteError(errors.New(devMsg), logging.LevelFatal)
+	if err != nil {
+		log.Printf("LOG ERROR: %v\n", err)
+	}
 
 	_ = json.NewEncoder(ctx).Encode(appError{
 		StatusCode:   fasthttp.StatusInternalServerError,
