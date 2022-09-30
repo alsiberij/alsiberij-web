@@ -19,7 +19,7 @@ type (
 	}
 
 	Postgres struct {
-		conn *pgxpool.Pool
+		pool *pgxpool.Pool
 	}
 )
 
@@ -41,19 +41,19 @@ func NewPostgres(config PostgresConfig) (*Postgres, error) {
 		return nil, err
 	}
 
-	return &Postgres{conn: pool}, nil
+	return &Postgres{pool: pool}, nil
 }
 
 func (r *Postgres) AcquireConnection(ctx context.Context) (*pgxpool.Conn, error) {
-	if r.conn == nil {
+	if r.pool == nil {
 		return nil, ErrNotInitialized
 	}
 
-	return r.conn.Acquire(ctx)
+	return r.pool.Acquire(ctx)
 }
 
 func (r *Postgres) Close() {
-	if r.conn != nil {
-		r.conn.Close()
+	if r.pool != nil {
+		r.pool.Close()
 	}
 }
