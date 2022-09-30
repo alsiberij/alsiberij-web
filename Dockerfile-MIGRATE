@@ -13,7 +13,7 @@ FROM scratch
 COPY --from=builder /etc/ssl/certs/ca-certificates.crt /etc/ssl/certs/
 COPY --from=builder /app/app /bin/app
 
-COPY migrate/config.example.json /config.json
+COPY migrate/config.json /config.json
 
 COPY api-go-auth/migrations /migrations/api-go-auth/
 
