@@ -20,14 +20,14 @@ type (
 	}
 )
 
-func (a *application) setCustomError(ctx *fasthttp.RequestCtx, err *models.Error) {
+func (a *Application) setCustomError(ctx *fasthttp.RequestCtx, err *models.Error) {
 	e := convertError(err)
 	_ = json.NewEncoder(ctx).Encode(e)
 	ctx.SetContentType("application/json")
 	ctx.SetStatusCode(e.StatusCode)
 }
 
-func (a *application) set400(ctx *fasthttp.RequestCtx) {
+func (a *Application) set400(ctx *fasthttp.RequestCtx) {
 	_ = json.NewEncoder(ctx).Encode(appError{
 		StatusCode: fasthttp.StatusBadRequest,
 		DevMsg:     "Bad request",
@@ -37,7 +37,7 @@ func (a *application) set400(ctx *fasthttp.RequestCtx) {
 	ctx.SetStatusCode(fasthttp.StatusBadRequest)
 }
 
-func (a *application) set401(ctx *fasthttp.RequestCtx) {
+func (a *Application) set401(ctx *fasthttp.RequestCtx) {
 	_ = json.NewEncoder(ctx).Encode(appError{
 		StatusCode: fasthttp.StatusUnauthorized,
 		DevMsg:     "Unauthorized",
@@ -47,7 +47,7 @@ func (a *application) set401(ctx *fasthttp.RequestCtx) {
 	ctx.SetStatusCode(fasthttp.StatusUnauthorized)
 }
 
-func (a *application) set403(ctx *fasthttp.RequestCtx) {
+func (a *Application) set403(ctx *fasthttp.RequestCtx) {
 	_ = json.NewEncoder(ctx).Encode(appError{
 		StatusCode:   fasthttp.StatusForbidden,
 		DevMsg:       "Forbidden",
@@ -58,10 +58,10 @@ func (a *application) set403(ctx *fasthttp.RequestCtx) {
 	ctx.SetStatusCode(fasthttp.StatusForbidden)
 }
 
-func (a *application) set403Banned(ctx *fasthttp.RequestCtx, ban *models.Ban) {
+func (a *Application) set403Banned(ctx *fasthttp.RequestCtx, ban *models.Ban) {
 	var usrMsg string
 	if ban != nil {
-		usrMsg = fmt.Sprintf("Your account was banned (%s - %s) by user #%d by reason: %s",
+		usrMsg = fmt.Sprintf("Your account was banned (%s - %s) by user #%d with reason: %s",
 			ban.At.Format("15:04 02-01-2006"),
 			ban.Until.Format("15:04 02-01-2006"),
 			ban.ByUserId,
@@ -77,7 +77,7 @@ func (a *application) set403Banned(ctx *fasthttp.RequestCtx, ban *models.Ban) {
 	ctx.SetStatusCode(fasthttp.StatusForbidden)
 }
 
-func (a *application) set404(ctx *fasthttp.RequestCtx) {
+func (a *Application) set404(ctx *fasthttp.RequestCtx) {
 	_ = json.NewEncoder(ctx).Encode(appError{
 		StatusCode:   fasthttp.StatusNotFound,
 		DevMsg:       "Not found: " + utils.BytesToString(ctx.Path()),
@@ -88,7 +88,7 @@ func (a *application) set404(ctx *fasthttp.RequestCtx) {
 	ctx.SetStatusCode(fasthttp.StatusNotFound)
 }
 
-func (a *application) set405(ctx *fasthttp.RequestCtx) {
+func (a *Application) set405(ctx *fasthttp.RequestCtx) {
 	_ = json.NewEncoder(ctx).Encode(appError{
 		StatusCode:   fasthttp.StatusMethodNotAllowed,
 		DevMsg:       "Method not allowed",
@@ -99,7 +99,7 @@ func (a *application) set405(ctx *fasthttp.RequestCtx) {
 	ctx.SetStatusCode(fasthttp.StatusMethodNotAllowed)
 }
 
-func (a *application) set500(ctx *fasthttp.RequestCtx, err error) {
+func (a *Application) set500(ctx *fasthttp.RequestCtx, err error) {
 	var devMsg string
 	if err != nil {
 		logErr := a.logger.WriteError(err, logging.LevelError)
@@ -121,7 +121,7 @@ func (a *application) set500(ctx *fasthttp.RequestCtx, err error) {
 	ctx.SetStatusCode(fasthttp.StatusInternalServerError)
 }
 
-func (a *application) set500Fatal(ctx *fasthttp.RequestCtx, i interface{}) {
+func (a *Application) set500Fatal(ctx *fasthttp.RequestCtx, i interface{}) {
 	var devMsg string
 
 	switch T := i.(type) {
@@ -130,7 +130,7 @@ func (a *application) set500Fatal(ctx *fasthttp.RequestCtx, i interface{}) {
 	case string:
 		devMsg += T
 	case nil:
-		devMsg += "Empty fatal error"
+		devMsg += "nil fatal error"
 	default:
 		devMsg += "Unknown fatal error"
 	}

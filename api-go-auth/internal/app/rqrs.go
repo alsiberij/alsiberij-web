@@ -12,6 +12,9 @@ const (
 	EmailMaxLength           = 64
 	EmailRegexp              = "^[a-z][a-z\\d-_.]{2,}@[a-z][a-z\\d-]+\\.[a-z][a-z\\d]+$"
 
+	LoginRegexp    = "^[a-z][a-z\\d]{4,32}$"
+	PasswordRegexp = "^[\\w!@#$%^&*\\-+=]{8,32}$"
+
 	RefreshTokenRevokeTypeCurrent          = "CURRENT"
 	RefreshTokenRevokeTypeAll              = "ALL"
 	RefreshTokenRevokeTypeAllExceptCurrent = "ALL_EXCEPT_CURRENT"
@@ -29,23 +32,28 @@ type (
 	checkEmailRequest struct {
 		Email string `json:"email"`
 	}
+
 	registerRequest struct {
 		Email    string `json:"email"`
 		Code     string `json:"code"`
 		Login    string `json:"login"`
 		Password string `json:"password"`
 	}
+
 	loginRequest struct {
 		Login    string `json:"login"`
 		Password string `json:"password"`
 	}
+
 	refreshRequest struct {
 		RefreshToken string `json:"refreshToken"`
 	}
+
 	banRequest struct {
 		Reason string `json:"reason"`
 		Until  int64  `json:"until"`
 	}
+
 	changeRoleRequest struct {
 		Role string `json:"role"`
 	}
@@ -53,9 +61,11 @@ type (
 	testResponse struct {
 		Status bool
 	}
+
 	loginResponse struct {
 		RefreshToken string `json:"refreshToken"`
 	}
+
 	refreshResponse struct {
 		AccessToken string `json:"accessToken"`
 		ExpiresAt   int64  `json:"expiresAt"`
@@ -64,8 +74,8 @@ type (
 )
 
 var (
-	validLogin    = regexp.MustCompile("^[a-z][a-z\\d]{4,32}$").MatchString
-	validPassword = regexp.MustCompile("^[\\w!@#$%^&*\\-+=]{8,32}$").MatchString
+	validLogin    = regexp.MustCompile(LoginRegexp).MatchString
+	validPassword = regexp.MustCompile(PasswordRegexp).MatchString
 	validEmail    = regexp.MustCompile(EmailRegexp).MatchString
 	revokeTypes   = []string{RefreshTokenRevokeTypeAll, RefreshTokenRevokeTypeCurrent, RefreshTokenRevokeTypeAllExceptCurrent}
 )

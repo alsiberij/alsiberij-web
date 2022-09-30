@@ -12,12 +12,12 @@ import (
 	"strconv"
 )
 
-func (a *application) status(ctx *fasthttp.RequestCtx) {
+func (a *Application) status(ctx *fasthttp.RequestCtx) {
 	_ = json.NewEncoder(ctx).Encode(testResponse{Status: true})
 	ctx.SetContentType("application/json")
 }
 
-func (a *application) checkEmail(ctx *fasthttp.RequestCtx) {
+func (a *Application) checkEmail(ctx *fasthttp.RequestCtx) {
 	var request checkEmailRequest
 	err := json.Unmarshal(ctx.Request.Body(), &request)
 	if err != nil {
@@ -42,9 +42,7 @@ func (a *application) checkEmail(ctx *fasthttp.RequestCtx) {
 	}
 	defer conn.Release()
 
-	users := storages.NewUserStorage(conn)
-
-	exists, err := users.EmailExists(request.Email)
+	exists, err := storages.NewUserStorage(conn).EmailExists(request.Email)
 	if err != nil {
 		a.set500(ctx, err)
 		return
@@ -54,16 +52,14 @@ func (a *application) checkEmail(ctx *fasthttp.RequestCtx) {
 		return
 	}
 
-	codes := storages.NewCodeStorage(a.rdsClient1.Client())
-
 	code := a.rnd.Code(VerificationCodeLength)
-	err = codes.CreateAndStore(request.Email, code, VerificationCodeLifetime)
+	err = storages.NewCodeStorage(a.rdsClient1.Client()).CreateAndStore(request.Email, code, VerificationCodeLifetime)
 	if err != nil {
 		a.set500(ctx, err)
 	}
 }
 
-func (a *application) register(ctx *fasthttp.RequestCtx) {
+func (a *Application) register(ctx *fasthttp.RequestCtx) {
 	var request registerRequest
 	err := json.Unmarshal(ctx.Request.Body(), &request)
 	if err != nil {
@@ -81,9 +77,7 @@ func (a *application) register(ctx *fasthttp.RequestCtx) {
 		return
 	}
 
-	codes := storages.NewCodeStorage(a.rdsClient1.Client())
-
-	ok, err := codes.VerifyCode(request.Email, request.Code)
+	ok, err := storages.NewCodeStorage(a.rdsClient1.Client()).VerifyCode(request.Email, request.Code)
 	if err != nil {
 		a.set500(ctx, err)
 		return
@@ -121,7 +115,7 @@ func (a *application) register(ctx *fasthttp.RequestCtx) {
 	ctx.SetStatusCode(fasthttp.StatusCreated)
 }
 
-func (a *application) login(ctx *fasthttp.RequestCtx) {
+func (a *Application) login(ctx *fasthttp.RequestCtx) {
 	var request loginRequest
 	err := json.Unmarshal(ctx.Request.Body(), &request)
 	if err != nil {
@@ -146,9 +140,10 @@ func (a *application) login(ctx *fasthttp.RequestCtx) {
 	}
 	defer conn.Release()
 
-	users := storages.NewUserStorage(conn)
-
-	user, err := users.GetByCredentials(models.UserCredentials{Login: request.Login, Password: request.Password})
+	user, err := storages.NewUserStorage(conn).GetByCredentials(models.UserCredentials{
+		Login:    request.Login,
+		Password: request.Password,
+	})
 	if err != nil {
 		a.set500(ctx, err)
 		return
@@ -158,9 +153,7 @@ func (a *application) login(ctx *fasthttp.RequestCtx) {
 		return
 	}
 
-	bans := storages.NewBanStorage(a.rdsClient0.Client())
-
-	ban, err := bans.Get(user.Id)
+	ban, err := storages.NewBanStorage(a.rdsClient0.Client()).Get(user.Id)
 	if err != nil {
 		a.set500(ctx, err)
 		return
@@ -170,10 +163,8 @@ func (a *application) login(ctx *fasthttp.RequestCtx) {
 		return
 	}
 
-	refTokens := storages.NewRefreshTokenStorage(conn)
-
 	refreshToken := a.rnd.String(RefreshTokenLength, RefreshTokenAlphabet)
-	err = refTokens.CreateAndStore(user.Id, refreshToken)
+	err = storages.NewRefreshTokenStorage(conn).CreateAndStore(user.Id, refreshToken)
 	if err != nil {
 		a.set500(ctx, err)
 		return
@@ -185,7 +176,7 @@ func (a *application) login(ctx *fasthttp.RequestCtx) {
 	ctx.SetContentType("application/json")
 }
 
-func (a *application) refresh(ctx *fasthttp.RequestCtx) {
+func (a *Application) refresh(ctx *fasthttp.RequestCtx) {
 	var request refreshRequest
 	err := json.Unmarshal(ctx.Request.Body(), &request)
 	if err != nil {
@@ -210,9 +201,7 @@ func (a *application) refresh(ctx *fasthttp.RequestCtx) {
 	}
 	defer conn.Release()
 
-	refTokens := storages.NewRefreshTokenStorage(conn)
-
-	refreshToken, err := refTokens.Get(request.RefreshToken, RefreshTokenLifePeriod)
+	refreshToken, err := storages.NewRefreshTokenStorage(conn).Get(request.RefreshToken, RefreshTokenLifePeriod)
 	if err != nil {
 		a.set500(ctx, err)
 		return
@@ -233,7 +222,7 @@ func (a *application) refresh(ctx *fasthttp.RequestCtx) {
 	ctx.SetContentType("application/json")
 }
 
-func (a *application) revoke(ctx *fasthttp.RequestCtx) {
+func (a *Application) revoke(ctx *fasthttp.RequestCtx) {
 	var request refreshRequest
 	err := json.Unmarshal(ctx.Request.Body(), &request)
 	if err != nil {
@@ -284,7 +273,7 @@ func (a *application) revoke(ctx *fasthttp.RequestCtx) {
 	}
 }
 
-func (a *application) jwtInfo(ctx *fasthttp.RequestCtx) {
+func (a *Application) jwtInfo(ctx *fasthttp.RequestCtx) {
 	claims, ok := ctx.UserValue(JwtContext).(jwt.Claims)
 	if !ok {
 		a.set500(ctx, errors.New("access token error"))
@@ -295,7 +284,7 @@ func (a *application) jwtInfo(ctx *fasthttp.RequestCtx) {
 	ctx.SetContentType("application/json")
 }
 
-func (a *application) ban(ctx *fasthttp.RequestCtx) {
+func (a *Application) ban(ctx *fasthttp.RequestCtx) {
 	userIdFromRequest, _ := ctx.UserValue("id").(string)
 	userId, err := strconv.ParseInt(userIdFromRequest, 10, 64)
 	if err != nil {
@@ -327,9 +316,7 @@ func (a *application) ban(ctx *fasthttp.RequestCtx) {
 	}
 	defer conn.Release()
 
-	users := storages.NewUserStorage(conn)
-
-	user, err := users.GetById(userId)
+	user, err := storages.NewUserStorage(conn).GetById(userId)
 	if err != nil {
 		a.set500(ctx, err)
 		return
@@ -356,20 +343,16 @@ func (a *application) ban(ctx *fasthttp.RequestCtx) {
 		return
 	}
 
-	bans := storages.NewBanStorage(a.rdsClient0.Client())
-
-	err = bans.CreateAndStore(userId, request.Reason, request.Until, jwtToken.Sub)
+	err = storages.NewBanStorage(a.rdsClient0.Client()).CreateAndStore(userId, request.Reason, request.Until, jwtToken.Sub)
 	if err != nil {
 		a.set500(ctx, err)
 		return
 	}
 
-	refTokens := storages.NewRefreshTokenStorage(conn)
-
-	_ = refTokens.RevokeAllByUserId(userId)
+	_ = storages.NewRefreshTokenStorage(conn).RevokeAllByUserId(userId)
 }
 
-func (a *application) unban(ctx *fasthttp.RequestCtx) {
+func (a *Application) unban(ctx *fasthttp.RequestCtx) {
 	userIdFromRequest, _ := ctx.UserValue("id").(string)
 	userId, err := strconv.ParseInt(userIdFromRequest, 10, 64)
 	if err != nil {
@@ -384,9 +367,7 @@ func (a *application) unban(ctx *fasthttp.RequestCtx) {
 	}
 	defer conn.Release()
 
-	users := storages.NewUserStorage(conn)
-
-	user, err := users.GetById(userId)
+	user, err := storages.NewUserStorage(conn).GetById(userId)
 	if err != nil {
 		a.set500(ctx, err)
 		return
@@ -413,15 +394,13 @@ func (a *application) unban(ctx *fasthttp.RequestCtx) {
 		return
 	}
 
-	bans := storages.NewBanStorage(a.rdsClient0.Client())
-
-	err = bans.Delete(userId)
+	err = storages.NewBanStorage(a.rdsClient0.Client()).Delete(userId)
 	if err != nil {
 		a.set500(ctx, err)
 	}
 }
 
-func (a *application) changeRole(ctx *fasthttp.RequestCtx) {
+func (a *Application) changeRole(ctx *fasthttp.RequestCtx) {
 	userIdFromRequest, _ := ctx.UserValue("id").(string)
 	userId, err := strconv.ParseInt(userIdFromRequest, 10, 64)
 	if err != nil {

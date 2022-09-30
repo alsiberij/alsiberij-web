@@ -9,7 +9,7 @@ import (
 type (
 	Random struct {
 		rand *rand.Rand
-		mx   *sync.Mutex
+		mx   sync.Mutex
 	}
 
 	Searchable interface {
@@ -17,15 +17,15 @@ type (
 	}
 )
 
-func NewRandom(seed int64) Random {
-	return Random{
+func NewRandom(seed int64) *Random {
+	return &Random{
 		rand: rand.New(rand.NewSource(seed)),
-		mx:   &sync.Mutex{},
+		mx:   sync.Mutex{},
 	}
 }
 
 func (r *Random) Int() int {
-	if r.mx == nil || r.rand == nil {
+	if r.rand == nil {
 		return 0
 	}
 
@@ -36,7 +36,7 @@ func (r *Random) Int() int {
 }
 
 func (r *Random) String(length uint, alphabet string) string {
-	if r.mx == nil || r.rand == nil {
+	if r.rand == nil {
 		return ""
 	}
 
@@ -52,7 +52,7 @@ func (r *Random) String(length uint, alphabet string) string {
 }
 
 func (r *Random) Code(length uint) string {
-	if r.mx == nil || r.rand == nil {
+	if r.rand == nil {
 		return ""
 	}
 

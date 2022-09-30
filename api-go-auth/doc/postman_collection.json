@@ -1,6 +1,6 @@
 {
 	"info": {
-		"_postman_id": "e0da5dde-cec1-4d07-9070-2b14794c2bee",
+		"_postman_id": "d9f545b9-a816-4276-8e7d-704495ebb3d2",
 		"name": "API-GO-AUTH",
 		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
 		"_exporter_id": "18920181"
@@ -206,8 +206,45 @@
 				{
 					"name": "Change role",
 					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOjEsInJvbCI6IkNSRUFUT1IiLCJleHAiOjE2NjQ1MzQ4OTksImlhdCI6MTY2NDUzMTI5OX0.VZFTQ_78x2rLTrO7yuMMf8lgTvzJl40P1DEG4UKbrEE",
+									"type": "string"
+								}
+							]
+						},
 						"method": "PATCH",
-						"header": []
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\r\n    \"role\": \"PRIVILEGED_USER\"\r\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{BaseURL}}/v1/user/:userId/role",
+							"host": [
+								"{{BaseURL}}"
+							],
+							"path": [
+								"v1",
+								"user",
+								":userId",
+								"role"
+							],
+							"variable": [
+								{
+									"key": "userId",
+									"value": "1"
+								}
+							]
+						}
 					},
 					"response": []
 				}

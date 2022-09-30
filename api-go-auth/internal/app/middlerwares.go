@@ -16,7 +16,7 @@ const (
 	JwtContext = "JWT_CONTEXT"
 )
 
-func (a *application) logMiddleware(handler fasthttp.RequestHandler) fasthttp.RequestHandler {
+func (a *Application) logMiddleware(handler fasthttp.RequestHandler) fasthttp.RequestHandler {
 	return func(ctx *fasthttp.RequestCtx) {
 		req := logging.Request{
 			Timestamp: time.Now().Unix(),
@@ -47,7 +47,7 @@ func (a *application) logMiddleware(handler fasthttp.RequestHandler) fasthttp.Re
 	}
 }
 
-func (a *application) authorize(handler fasthttp.RequestHandler) fasthttp.RequestHandler {
+func (a *Application) authorize(handler fasthttp.RequestHandler) fasthttp.RequestHandler {
 	return func(ctx *fasthttp.RequestCtx) {
 		authorization := string(ctx.Request.Header.Peek("Authorization"))
 		_, bearerToken, ok := strings.Cut(authorization, "Bearer ")
@@ -62,9 +62,7 @@ func (a *application) authorize(handler fasthttp.RequestHandler) fasthttp.Reques
 			return
 		}
 
-		bans := storages.NewBanStorage(a.rdsClient0.Client())
-
-		ban, err := bans.Get(claims.Sub)
+		ban, err := storages.NewBanStorage(a.rdsClient0.Client()).Get(claims.Sub)
 		if err != nil {
 			a.set500(ctx, err)
 			return
@@ -79,7 +77,7 @@ func (a *application) authorize(handler fasthttp.RequestHandler) fasthttp.Reques
 	}
 }
 
-func (a *application) authorizeRoles(roles ...models.UserRole) middleware {
+func (a *Application) authorizeRoles(roles ...models.UserRole) middleware {
 	return func(handler fasthttp.RequestHandler) fasthttp.RequestHandler {
 		return func(ctx *fasthttp.RequestCtx) {
 			authorization := string(ctx.Request.Header.Peek("Authorization"))
@@ -113,9 +111,7 @@ func (a *application) authorizeRoles(roles ...models.UserRole) middleware {
 				return
 			}
 
-			bans := storages.NewBanStorage(a.rdsClient0.Client())
-
-			ban, err := bans.Get(claims.Sub)
+			ban, err := storages.NewBanStorage(a.rdsClient0.Client()).Get(claims.Sub)
 			if err != nil {
 				a.set500(ctx, err)
 				return

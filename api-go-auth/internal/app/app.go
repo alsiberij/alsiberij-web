@@ -23,27 +23,23 @@ const (
 )
 
 type (
-	application struct {
+	Application struct {
 		logger     *logging.Logger
 		pgsPool    *pgs.Postgres
 		rdsClient0 *rds.Redis
 		rdsClient1 *rds.Redis
 		server     *fasthttp.Server
 		lis        net.Listener
-		rnd        utils.Random
-	}
-
-	App interface {
-		Serve()
+		rnd        *utils.Random
 	}
 )
 
-func NewApp(serverName string, logger *logging.Logger, pgsPool *pgs.Postgres, rdsClient0, rdsClient1 *rds.Redis, lis net.Listener) (App, error) {
+func NewApp(serverName string, logger *logging.Logger, pgsPool *pgs.Postgres, rdsClient0, rdsClient1 *rds.Redis, lis net.Listener) (*Application, error) {
 	if logger == nil || pgsPool == nil || rdsClient0 == nil || rdsClient1 == nil || lis == nil {
-		return nil, errors.New("app init error - nil arguments passed")
+		return nil, errors.New("nil arguments passed to app builder")
 	}
 
-	app := &application{
+	app := &Application{
 		logger:     logger,
 		pgsPool:    pgsPool,
 		rdsClient0: rdsClient0,
@@ -70,17 +66,15 @@ func NewApp(serverName string, logger *logging.Logger, pgsPool *pgs.Postgres, rd
 	r.DELETE(V1+"/user/{id}/ban", withMiddlewares(app.unban, app.authorizeRoles(models.RoleCreator, models.RoleAdministrator)))
 	r.PATCH(V1+"/user/{id}/role", withMiddlewares(app.changeRole, app.authorizeRoles(models.RoleCreator, models.RoleAdministrator)))
 
-	server := &fasthttp.Server{
+	app.server = &fasthttp.Server{
 		Handler: app.logMiddleware(r.Handler),
 		Name:    serverName,
 	}
 
-	app.server = server
-
 	return app, nil
 }
 
-func (a *application) Serve() {
+func (a *Application) Serve() {
 	sigChan := make(chan os.Signal)
 	signal.Notify(sigChan, syscall.SIGINT, syscall.SIGTERM)
 
@@ -111,12 +105,8 @@ func (a *application) Serve() {
 
 	err = a.logger.Close()
 	if err != nil {
-		log.Printf("ERROR SAVING LOG BUFFER: %v\n", err)
+		log.Printf("ERROR SAVING LOG: %v\n", err)
 	}
 
-	if err != nil {
-		log.Printf("SHUT DOWN ERROR: %v\n", err)
-	} else {
-		log.Println("SHUT DOWN OK")
-	}
+	log.Println("SHUT DOWN OK")
 }
