@@ -1,4 +1,4 @@
-package storage
+package storages
 
 import (
 	"auth/internal/models"
@@ -18,29 +18,28 @@ const (
 
 type (
 	CodeStorage struct {
-		conn *redis.Client
+		querier *redis.Client
 	}
 )
 
 func NewCodeStorage(q *redis.Client) models.CodeStorage {
-	return &CodeStorage{conn: q}
+	return &CodeStorage{querier: q}
 }
 
 func (r *CodeStorage) CreateAndStore(email, code string, lifetime time.Duration) error {
-	if r.conn == nil {
+	if r.querier == nil {
 		return rds.ErrNotInitialized
 	}
 
-	return r.conn.Set(context.Background(), fmt.Sprintf(VerificationCodeRedisKey, email), code, lifetime).Err()
+	return r.querier.Set(context.Background(), fmt.Sprintf(VerificationCodeRedisKey, email), code, lifetime).Err()
 }
 
 func (r *CodeStorage) VerifyCode(email, code string) (bool, error) {
-	if r.conn == nil {
+	if r.querier == nil {
 		return false, rds.ErrNotInitialized
 	}
 
-	response := r.conn.Get(context.Background(), fmt.Sprintf(VerificationCodeRedisKey, email))
-	result, err := response.Result()
+	result, err := r.querier.Get(context.Background(), fmt.Sprintf(VerificationCodeRedisKey, email)).Result()
 	if err != nil {
 		if errors.Is(err, redis.Nil) {
 			return false, nil

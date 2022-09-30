@@ -1,4 +1,4 @@
-package storage
+package storages
 
 import (
 	"auth/internal/models"
@@ -14,12 +14,12 @@ import (
 //TODO context
 
 const (
-	BanRedisKey = "BAN_AUTH_%d"
+	BanRedisKeyPattern = "BAN_AUTH_%d"
 )
 
 type (
 	BanStorage struct {
-		conn *redis.Client
+		querier *redis.Client
 	}
 
 	banSerialized struct {
@@ -32,11 +32,11 @@ type (
 )
 
 func NewBanStorage(q *redis.Client) models.BanStorage {
-	return &BanStorage{conn: q}
+	return &BanStorage{querier: q}
 }
 
 func (r *BanStorage) CreateAndStore(userId int64, reason string, until int64, byUserId int64) error {
-	if r.conn == nil {
+	if r.querier == nil {
 		return rds.ErrNotInitialized
 	}
 
@@ -51,16 +51,15 @@ func (r *BanStorage) CreateAndStore(userId int64, reason string, until int64, by
 
 	bytes, _ := json.Marshal(ban)
 
-	return r.conn.Set(context.Background(), fmt.Sprintf(BanRedisKey, userId), bytes, time.Unix(until, 0).Sub(t)).Err()
+	return r.querier.Set(context.Background(), fmt.Sprintf(BanRedisKeyPattern, userId), bytes, time.Unix(until, 0).Sub(t)).Err()
 }
 
 func (r *BanStorage) Get(userId int64) (*models.Ban, error) {
-	if r.conn == nil {
+	if r.querier == nil {
 		return nil, rds.ErrNotInitialized
 	}
 
-	result := r.conn.Get(context.Background(), fmt.Sprintf(BanRedisKey, userId))
-	raw, err := result.Bytes()
+	raw, err := r.querier.Get(context.Background(), fmt.Sprintf(BanRedisKeyPattern, userId)).Bytes()
 	if err != nil {
 		if errors.Is(err, redis.Nil) {
 			return nil, nil
@@ -84,9 +83,9 @@ func (r *BanStorage) Get(userId int64) (*models.Ban, error) {
 }
 
 func (r *BanStorage) Delete(userId int64) error {
-	if r.conn == nil {
+	if r.querier == nil {
 		return rds.ErrNotInitialized
 	}
 
-	return r.conn.Del(context.Background(), fmt.Sprintf(BanRedisKey, userId)).Err()
+	return r.querier.Del(context.Background(), fmt.Sprintf(BanRedisKeyPattern, userId)).Err()
 }

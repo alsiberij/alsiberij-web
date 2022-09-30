@@ -1,4 +1,4 @@
-package storage
+package storages
 
 import (
 	"auth/internal/models"
@@ -13,16 +13,16 @@ import (
 
 type (
 	UserStorage struct {
-		conn pgxtype.Querier
+		querier pgxtype.Querier
 	}
 )
 
 func NewUserStorage(q pgxtype.Querier) models.UserStorage {
-	return &UserStorage{conn: q}
+	return &UserStorage{querier: q}
 }
 
 func (r *UserStorage) CreateAndStore(email, login, password string) error {
-	if r.conn == nil {
+	if r.querier == nil {
 		return pgs.ErrNotInitialized
 	}
 
@@ -30,13 +30,13 @@ func (r *UserStorage) CreateAndStore(email, login, password string) error {
 	h.Write([]byte(password))
 	password = hex.EncodeToString(h.Sum(nil))
 
-	_, err := r.conn.Exec(context.Background(), `INSERT INTO users(email, login, password) VALUES ($1, $2, $3)`,
+	_, err := r.querier.Exec(context.Background(), `INSERT INTO users(email, login, password) VALUES ($1, $2, $3)`,
 		email, login, password)
 	return err
 }
 
 func (r *UserStorage) GetByCredentials(credentials models.UserCredentials) (*models.User, error) {
-	if r.conn == nil {
+	if r.querier == nil {
 		return nil, pgs.ErrNotInitialized
 	}
 
@@ -44,7 +44,7 @@ func (r *UserStorage) GetByCredentials(credentials models.UserCredentials) (*mod
 	h.Write([]byte(credentials.Password))
 	passwordHash := hex.EncodeToString(h.Sum(nil))
 
-	rows, err := r.conn.Query(context.Background(), `SELECT id, email, login, password, role, "createdAt" FROM users WHERE login = $1 AND password = $2`,
+	rows, err := r.querier.Query(context.Background(), `SELECT id, email, login, password, role, "createdAt" FROM users WHERE login = $1 AND password = $2`,
 		credentials.Login, passwordHash)
 	if err != nil {
 		return nil, err
@@ -63,11 +63,11 @@ func (r *UserStorage) GetByCredentials(credentials models.UserCredentials) (*mod
 }
 
 func (r *UserStorage) GetById(userId int64) (*models.User, error) {
-	if r.conn == nil {
+	if r.querier == nil {
 		return nil, pgs.ErrNotInitialized
 	}
 
-	rows, err := r.conn.Query(context.Background(), `SELECT id, email, login, password, role, "createdAt" FROM users WHERE id = $1`, userId)
+	rows, err := r.querier.Query(context.Background(), `SELECT id, email, login, password, role, "createdAt" FROM users WHERE id = $1`, userId)
 	if err != nil {
 		return nil, err
 	}
@@ -85,12 +85,12 @@ func (r *UserStorage) GetById(userId int64) (*models.User, error) {
 }
 
 func (r *UserStorage) EmailExists(email string) (bool, error) {
-	if r.conn == nil {
+	if r.querier == nil {
 		return false, pgs.ErrNotInitialized
 	}
 
 	var exists bool
-	err := r.conn.QueryRow(context.Background(), `SELECT EXISTS(SELECT FROM users WHERE email = $1)`, email).
+	err := r.querier.QueryRow(context.Background(), `SELECT EXISTS(SELECT FROM users WHERE email = $1)`, email).
 		Scan(&exists)
 	if err != nil {
 		return false, err
@@ -100,12 +100,12 @@ func (r *UserStorage) EmailExists(email string) (bool, error) {
 }
 
 func (r *UserStorage) LoginExists(login string) (bool, error) {
-	if r.conn == nil {
+	if r.querier == nil {
 		return false, pgs.ErrNotInitialized
 	}
 
 	var exists bool
-	err := r.conn.QueryRow(context.Background(),
+	err := r.querier.QueryRow(context.Background(),
 		`SELECT EXISTS(SELECT FROM users WHERE login = $1)`, login).
 		Scan(&exists)
 	if err != nil {
@@ -116,10 +116,10 @@ func (r *UserStorage) LoginExists(login string) (bool, error) {
 }
 
 func (r *UserStorage) ChangeRole(userId int64, newRole string) error {
-	if r.conn == nil {
+	if r.querier == nil {
 		return pgs.ErrNotInitialized
 	}
 
-	_, err := r.conn.Exec(context.Background(), `UPDATE users SET role = $1 WHERE id = $2`, newRole, userId)
+	_, err := r.querier.Exec(context.Background(), `UPDATE users SET role = $1 WHERE id = $2`, newRole, userId)
 	return err
 }

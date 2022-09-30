@@ -2,7 +2,7 @@ package app
 
 import (
 	"auth/internal/models"
-	"auth/internal/storage"
+	"auth/internal/storages"
 	"auth/pkg/jwt"
 	"auth/pkg/utils"
 	"context"
@@ -42,7 +42,7 @@ func (a *application) checkEmail(ctx *fasthttp.RequestCtx) {
 	}
 	defer conn.Release()
 
-	users := storage.NewUserStorage(conn)
+	users := storages.NewUserStorage(conn)
 
 	exists, err := users.EmailExists(request.Email)
 	if err != nil {
@@ -54,7 +54,7 @@ func (a *application) checkEmail(ctx *fasthttp.RequestCtx) {
 		return
 	}
 
-	codes := storage.NewCodeStorage(a.rdsClient1.Client())
+	codes := storages.NewCodeStorage(a.rdsClient1.Client())
 
 	code := a.rnd.Code(VerificationCodeLength)
 	err = codes.CreateAndStore(request.Email, code, VerificationCodeLifetime)
@@ -81,7 +81,7 @@ func (a *application) register(ctx *fasthttp.RequestCtx) {
 		return
 	}
 
-	codes := storage.NewCodeStorage(a.rdsClient1.Client())
+	codes := storages.NewCodeStorage(a.rdsClient1.Client())
 
 	ok, err := codes.VerifyCode(request.Email, request.Code)
 	if err != nil {
@@ -100,7 +100,7 @@ func (a *application) register(ctx *fasthttp.RequestCtx) {
 	}
 	defer conn.Release()
 
-	users := storage.NewUserStorage(conn)
+	users := storages.NewUserStorage(conn)
 
 	exists, err := users.LoginExists(request.Login)
 	if err != nil {
@@ -146,7 +146,7 @@ func (a *application) login(ctx *fasthttp.RequestCtx) {
 	}
 	defer conn.Release()
 
-	users := storage.NewUserStorage(conn)
+	users := storages.NewUserStorage(conn)
 
 	user, err := users.GetByCredentials(models.UserCredentials{Login: request.Login, Password: request.Password})
 	if err != nil {
@@ -158,7 +158,7 @@ func (a *application) login(ctx *fasthttp.RequestCtx) {
 		return
 	}
 
-	bans := storage.NewBanStorage(a.rdsClient0.Client())
+	bans := storages.NewBanStorage(a.rdsClient0.Client())
 
 	ban, err := bans.Get(user.Id)
 	if err != nil {
@@ -170,7 +170,7 @@ func (a *application) login(ctx *fasthttp.RequestCtx) {
 		return
 	}
 
-	refTokens := storage.NewRefreshTokenStorage(conn)
+	refTokens := storages.NewRefreshTokenStorage(conn)
 
 	refreshToken := a.rnd.String(RefreshTokenLength, RefreshTokenAlphabet)
 	err = refTokens.CreateAndStore(user.Id, refreshToken)
@@ -210,7 +210,7 @@ func (a *application) refresh(ctx *fasthttp.RequestCtx) {
 	}
 	defer conn.Release()
 
-	refTokens := storage.NewRefreshTokenStorage(conn)
+	refTokens := storages.NewRefreshTokenStorage(conn)
 
 	refreshToken, err := refTokens.Get(request.RefreshToken, RefreshTokenLifePeriod)
 	if err != nil {
@@ -265,7 +265,7 @@ func (a *application) revoke(ctx *fasthttp.RequestCtx) {
 	}
 	defer conn.Release()
 
-	refTokens := storage.NewRefreshTokenStorage(conn)
+	refTokens := storages.NewRefreshTokenStorage(conn)
 
 	switch revokeType {
 	case RefreshTokenRevokeTypeCurrent:
@@ -327,7 +327,7 @@ func (a *application) ban(ctx *fasthttp.RequestCtx) {
 	}
 	defer conn.Release()
 
-	users := storage.NewUserStorage(conn)
+	users := storages.NewUserStorage(conn)
 
 	user, err := users.GetById(userId)
 	if err != nil {
@@ -356,7 +356,7 @@ func (a *application) ban(ctx *fasthttp.RequestCtx) {
 		return
 	}
 
-	bans := storage.NewBanStorage(a.rdsClient0.Client())
+	bans := storages.NewBanStorage(a.rdsClient0.Client())
 
 	err = bans.CreateAndStore(userId, request.Reason, request.Until, jwtToken.Sub)
 	if err != nil {
@@ -364,7 +364,7 @@ func (a *application) ban(ctx *fasthttp.RequestCtx) {
 		return
 	}
 
-	refTokens := storage.NewRefreshTokenStorage(conn)
+	refTokens := storages.NewRefreshTokenStorage(conn)
 
 	_ = refTokens.RevokeAllByUserId(userId)
 }
@@ -384,7 +384,7 @@ func (a *application) unban(ctx *fasthttp.RequestCtx) {
 	}
 	defer conn.Release()
 
-	users := storage.NewUserStorage(conn)
+	users := storages.NewUserStorage(conn)
 
 	user, err := users.GetById(userId)
 	if err != nil {
@@ -413,7 +413,7 @@ func (a *application) unban(ctx *fasthttp.RequestCtx) {
 		return
 	}
 
-	bans := storage.NewBanStorage(a.rdsClient0.Client())
+	bans := storages.NewBanStorage(a.rdsClient0.Client())
 
 	err = bans.Delete(userId)
 	if err != nil {
@@ -453,7 +453,7 @@ func (a *application) changeRole(ctx *fasthttp.RequestCtx) {
 	}
 	defer conn.Release()
 
-	users := storage.NewUserStorage(conn)
+	users := storages.NewUserStorage(conn)
 
 	user, err := users.GetById(userId)
 	if err != nil {

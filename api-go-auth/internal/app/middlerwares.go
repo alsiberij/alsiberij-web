@@ -2,7 +2,7 @@ package app
 
 import (
 	"auth/internal/models"
-	"auth/internal/storage"
+	"auth/internal/storages"
 	"auth/pkg/jwt"
 	"auth/pkg/logging"
 	"auth/pkg/utils"
@@ -62,7 +62,7 @@ func (a *application) authorize(handler fasthttp.RequestHandler) fasthttp.Reques
 			return
 		}
 
-		bans := storage.NewBanStorage(a.rdsClient0.Client())
+		bans := storages.NewBanStorage(a.rdsClient0.Client())
 
 		ban, err := bans.Get(claims.Sub)
 		if err != nil {
@@ -113,7 +113,7 @@ func (a *application) authorizeRoles(roles ...models.UserRole) middleware {
 				return
 			}
 
-			bans := storage.NewBanStorage(a.rdsClient0.Client())
+			bans := storages.NewBanStorage(a.rdsClient0.Client())
 
 			ban, err := bans.Get(claims.Sub)
 			if err != nil {
